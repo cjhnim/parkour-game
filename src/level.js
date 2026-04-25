@@ -5,8 +5,8 @@ import { intersects } from './collision.js';
 
 export const SCREEN_W = 960;
 export const SCREEN_H = 640;
-export const PLAYER_W = 24;
-export const PLAYER_H = 32;
+export const PLAYER_W = 32;
+export const PLAYER_H = 24;
 
 const wall = (x, y, w, h) => ({ x, y, w, h });
 
@@ -32,13 +32,13 @@ const stage1 = {
   spawn: { x: 60, y: SCREEN_H - 80 - PLAYER_H },
   // Route: ordered steps the player must complete to clear the stage.
   // verticalGap: height to climb (px). horizontalGap: horizontal distance with no overlap (px).
+  // P4 → Goal은 벽 점프 필요 — 일반 점프 도달 불가 (의도된 설계)
+  // P5는 함정: 올라갈 수 있지만 Goal에 도달 불가
   route: [
-    { label: 'Floor → P1',          verticalGap:  90, horizontalGap:   0 },
-    { label: 'P1 → P2',             verticalGap:  90, horizontalGap:  90 },
-    { label: 'P2 → P3',             verticalGap:  90, horizontalGap:  60 },
-    { label: 'P3 → P4',             verticalGap:  90, horizontalGap: 130 },
-    { label: 'P4 → P5',             verticalGap:  90, horizontalGap:  90 },
-    { label: 'P5 → Goal platform',  verticalGap:  70, horizontalGap: 160 },
+    { label: 'Floor → P1', verticalGap: 90, horizontalGap:   0 },
+    { label: 'P1 → P2',    verticalGap: 90, horizontalGap:  90 },
+    { label: 'P2 → P3',    verticalGap: 90, horizontalGap:  60 },
+    { label: 'P3 → P4',    verticalGap: 90, horizontalGap: 130 },
   ],
   solids: [
     wall(0, SCREEN_H - 40, SCREEN_W, 40),     // floor
@@ -49,11 +49,11 @@ const stage1 = {
     wall(150, SCREEN_H - 130, 140, 16),
     wall(380, SCREEN_H - 220, 140, 16),
     wall(180, SCREEN_H - 310, 140, 16),
-    wall(450, SCREEN_H - 400, 140, 16),
-    wall(220, SCREEN_H - 490, 140, 16),
-    wall(560, SCREEN_H - 560, 200, 16),       // goal platform
+    wall(450, SCREEN_H - 400, 140, 16),        // P4 (정규 루트 마지막)
+    wall(220, SCREEN_H - 490, 140, 16),        // P5 (함정)
+    wall(560, SCREEN_H - 530, 200, 16),        // goal platform (y=110)
   ],
-  goal: { x: 700, y: SCREEN_H - 600, w: 40, h: 40 },
+  goal: { x: 700, y: SCREEN_H - 570, w: 40, h: 40 },
 };
 
 export const STAGES = [stage0, stage1];

@@ -1,6 +1,8 @@
 // Pure stage-clearability validation functions.
 // Simulates player capability from current physics config and checks each route step.
 
+import { PLAYER_W } from './level.js';
+
 // Max height the player can reach above their feet.
 export function computeMaxJumpHeight(cfg) {
   let vy = cfg.jumpVelocity;
@@ -59,8 +61,8 @@ export function validateStage(stage, cfg) {
     if (step.verticalGap > maxJumpHeight) {
       issues.push({ step, type: 'too_high', required: step.verticalGap, available: maxJumpHeight });
     }
-    if (step.horizontalGap > maxHorizontalReach) {
-      issues.push({ step, type: 'too_far', required: step.horizontalGap, available: maxHorizontalReach });
+    if (step.horizontalGap + PLAYER_W > maxHorizontalReach) {
+      issues.push({ step, type: 'too_far', required: step.horizontalGap + PLAYER_W, available: maxHorizontalReach });
     }
   }
 

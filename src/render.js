@@ -29,23 +29,22 @@ export function createRenderer(canvas) {
 
   function drawPlayer(player, vx = 0) {
     const { x, y, w, h } = player;
-    const s = w / 24;
-    const p = n => Math.round(n * s);
-    const yo = h - p(20);
-    // 이동 방향에 따라 눈동자 1.5 SVG 단위 이동
-    const eyeShift = vx > 0 ? p(1.5) : vx < 0 ? -p(1.5) : 0;
+    // SVG 콘텐츠: 너비 24, 높이 20 (y=0~20) — 가로세로 스케일 분리
+    const px = n => Math.round(n * w / 24);
+    const py = n => Math.round(n * h / 20);
+    const eyeShift = vx > 0 ? px(1.5) : vx < 0 ? -px(1.5) : 0;
 
     ctx.fillStyle = '#D97757';
-    ctx.fillRect(x + p(3),   y + yo + p(5),  p(18), p(12)); // 몸통
-    ctx.fillRect(x,           y + yo + p(11), p(3),  p(3));  // 왼팔
-    ctx.fillRect(x + p(21),  y + yo + p(11), p(3),  p(3));  // 오른팔
-    ctx.fillRect(x + p(4.5), y + yo + p(17), p(1.5), p(3)); // 발 왼쪽 바깥
-    ctx.fillRect(x + p(7.5), y + yo + p(17), p(1.5), p(3)); // 발 왼쪽 안쪽
-    ctx.fillRect(x + p(15),  y + yo + p(17), p(1.5), p(3)); // 발 오른쪽 안쪽
-    ctx.fillRect(x + p(18),  y + yo + p(17), p(1.5), p(3)); // 발 오른쪽 바깥
+    ctx.fillRect(x + px(3),   y + py(5),  px(18), py(12)); // 몸통
+    ctx.fillRect(x,            y + py(11), px(3),  py(3));  // 왼팔
+    ctx.fillRect(x + px(21),  y + py(11), px(3),  py(3));  // 오른팔
+    ctx.fillRect(x + px(4.5), y + py(17), px(1.5), py(3)); // 발 왼쪽 바깥
+    ctx.fillRect(x + px(7.5), y + py(17), px(1.5), py(3)); // 발 왼쪽 안쪽
+    ctx.fillRect(x + px(15),  y + py(17), px(1.5), py(3)); // 발 오른쪽 안쪽
+    ctx.fillRect(x + px(18),  y + py(17), px(1.5), py(3)); // 발 오른쪽 바깥
     ctx.fillStyle = '#1a1a24';
-    ctx.fillRect(x + p(6)    + eyeShift, y + yo + p(8), p(1.5), p(3)); // 왼눈
-    ctx.fillRect(x + p(16.5) + eyeShift, y + yo + p(8), p(1.5), p(3)); // 오른눈
+    ctx.fillRect(x + px(6)    + eyeShift, y + py(8), px(1.5), py(3)); // 왼눈
+    ctx.fillRect(x + px(16.5) + eyeShift, y + py(8), px(1.5), py(3)); // 오른눈
   }
 
   function drawHud({ stageName, time, status, hint }) {
