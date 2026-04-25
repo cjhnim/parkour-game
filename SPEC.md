@@ -181,6 +181,7 @@
 - 더블 점프
 - 대시 (공중 수평 이동)
 - 콤보/트릭 점수 시스템
+- **스테이지 메이커** — 브라우저 에디터에서 검증된 패턴(long gap·drop·wall climb 등)을 스탬프처럼 배치해 스테이지를 만든다. 패턴 자체가 사전 검증돼있어 좌표 디버깅 불필요. 사용자는 패턴 배치·spawn·goal 위치만 책임. 만든 스테이지는 localStorage에 저장. Stage 5 추가가 validator 좌표 제약 연립 문제로 막힌 경험에서 나온 설계. 세부 plan: `~/.claude/plans/purring-enchanting-noodle.md`
 
 ### QoL (Quality of Life)
 - **베스트 타임 저장** — `localStorage`로 스테이지별 최단 시간 기록·표시
