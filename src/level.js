@@ -30,6 +30,16 @@ const stage1 = {
   id: 1,
   name: 'Stage 1 — Climb',
   spawn: { x: 60, y: SCREEN_H - 80 - PLAYER_H },
+  // Route: ordered steps the player must complete to clear the stage.
+  // verticalGap: height to climb (px). horizontalGap: horizontal distance with no overlap (px).
+  route: [
+    { label: 'Floor → P1',          verticalGap:  90, horizontalGap:   0 },
+    { label: 'P1 → P2',             verticalGap:  90, horizontalGap:  90 },
+    { label: 'P2 → P3',             verticalGap:  90, horizontalGap:  60 },
+    { label: 'P3 → P4',             verticalGap:  90, horizontalGap: 130 },
+    { label: 'P4 → P5',             verticalGap:  90, horizontalGap:  90 },
+    { label: 'P5 → Goal platform',  verticalGap:  70, horizontalGap: 200 },
+  ],
   solids: [
     wall(0, SCREEN_H - 40, SCREEN_W, 40),     // floor
     wall(0, 0, 20, SCREEN_H),                  // left wall

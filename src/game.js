@@ -20,7 +20,7 @@ import {
 import { createInput } from './input.js';
 import { createRenderer } from './render.js';
 
-export function startGame(canvas) {
+export function startGame(canvas, { onStageChange } = {}) {
   const input = createInput();
   const renderer = createRenderer(canvas);
 
@@ -43,6 +43,7 @@ export function startGame(canvas) {
   function reset(toStageId = stageId) {
     stageId = toStageId;
     stage = getStage(stageId);
+    onStageChange?.(stage);
     player = makePlayer(stage);
     vel = { vx: 0, vy: 0 };
     grounded = false;

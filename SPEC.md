@@ -90,6 +90,20 @@
 
 ---
 
+## 클리어 가능성 검증 (`src/validator.js`)
+
+튜닝 패널에서 물리 파라미터를 바꿀 때 스테이지를 클리어할 수 있는지 실시간으로 판독한다.
+
+- `computeMaxJumpHeight(cfg)` — 현재 config로 도달 가능한 최대 점프 높이 시뮬레이션
+- `computeMaxHorizontalReach(cfg)` — 점프 중 최대 수평 이동 거리
+- `validateStage(stage, cfg)` — route 각 구간의 수직·수평 간격을 capability와 비교 → `{ clearable, issues[], capabilities }`
+
+**스테이지 route**: 각 구간마다 필요한 `verticalGap`·`horizontalGap`(px)을 명시. 벽 점프는 미고려 (보수적 기준).
+
+**패널 표시**: ⚙ Tuning 패널 하단 CLEARABILITY 섹션에 실시간 표시. 불가 시 문제 구간과 필요/가능 거리를 함께 표시.
+
+---
+
 ## 테스트 현황
 
 | 파일 | 테스트 수 | 상태 |
@@ -97,7 +111,8 @@
 | `test/physics.test.js` | 21 | ✅ 전부 통과 |
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 10 | ✅ 전부 통과 |
-| **합계** | **40** | **✅** |
+| `test/validator.test.js` | 15 | ✅ 전부 통과 |
+| **합계** | **55** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 

@@ -60,7 +60,12 @@
       leftCol.appendChild(toggleBtn);
       leftCol.appendChild(panel);
 
-      startGame(document.getElementById('game'));
+      startGame(document.getElementById('game'), {
+        onStageChange(stage) {
+          panel._currentStage = stage;
+          panel._refreshValidation?.();
+        },
+      });
     </script>
   </body>
 </html>
