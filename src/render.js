@@ -1,6 +1,6 @@
 // Canvas rendering. Side-effectful.
 
-import { SCREEN_W, SCREEN_H } from './level.js';
+import { SCREEN_W, SCREEN_H, PLAYER_W, PLAYER_H } from './level.js';
 
 export function createRenderer(canvas) {
   canvas.width = SCREEN_W;
@@ -74,5 +74,98 @@ export function createRenderer(canvas) {
     }
   }
 
-  return { clear, drawSolids, drawGoal, drawPlayer, drawHud };
+  // Simulates one route step's leading-edge trajectory and returns absolute (x, y) points.
+  // Mirrors validator semantics: x = player's leading edge in vxDir, y = feet y.
+  function simulateStep(step, cfg) {
+    const pts = [];
+    const t = step.takeoff;
+
+    if (step.type === 'jump' || step.type === 'wall-touch') {
+      if (!t) return pts;
+      const vxDir = t.vxDir ?? 0;
+      let x = t.x, y = t.y;
+      // For 'jump' steps targeting a platform, pick vx so contact happens near peak y
+      // (cleaner visual). Player can pick any vx in [0, moveSpeed] via input control.
+      let vx;
+      if (step.type === 'jump' && step.targetPlatform && vxDir !== 0) {
+        const tp = step.targetPlatform;
+        const dx = vxDir > 0 ? tp.x - t.x : (tp.x + tp.w) - t.x;
+        const peakFrame = Math.max(1, Math.round(-cfg.jumpVelocity / cfg.gravity));
+        const optimal = dx / peakFrame;
+        vx = Math.max(-cfg.moveSpeed, Math.min(cfg.moveSpeed, optimal));
+      } else {
+        vx = vxDir * cfg.moveSpeed;
+      }
+      let vy = cfg.jumpVelocity;
+      pts.push({ x, y });
+      for (let f = 0; f < 200; f++) {
+        vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
+        x += vx;
+        y += vy;
+        pts.push({ x, y });
+        if (step.type === 'jump' && step.targetPlatform) {
+          const tp = step.targetPlatform;
+          const pLeft  = vxDir > 0 ? x - PLAYER_W : vxDir < 0 ? x : x - PLAYER_W / 2;
+          const pRight = vxDir > 0 ? x : vxDir < 0 ? x + PLAYER_W : x + PLAYER_W / 2;
+          if (pRight >= tp.x && pLeft <= tp.x + tp.w &&
+              y >= tp.y && (y - PLAYER_H) <= tp.y + tp.h) break;
+        } else if (step.type === 'wall-touch') {
+          if (Math.abs(x - t.x) >= step.horizontalGap) break;
+        }
+        if (y > t.y + 600) break;
+      }
+    } else if (step.type === 'wall-jump-land') {
+      const side = step.wallSide;
+      let x = step.wallX - side * (PLAYER_W / 2);
+      let y = step.wallTouchY;
+      let vx = -side * cfg.wallJumpVx;
+      let vy = cfg.wallJumpVy;
+      const tp = step.targetPlatform;
+      pts.push({ x, y });
+      for (let f = 0; f < 200; f++) {
+        const prevY = y;
+        vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
+        x += vx;
+        y += vy;
+        pts.push({ x, y });
+        if (vy > 0 && prevY < tp.y && y >= tp.y) {
+          if (x + PLAYER_W / 2 >= tp.x && x - PLAYER_W / 2 <= tp.x + tp.w) break;
+        }
+        if (y > tp.y + 400) break;
+      }
+    }
+    return pts;
+  }
+
+  function drawRoute(stage, cfg) {
+    if (!stage?.route) return;
+    ctx.save();
+    ctx.strokeStyle = '#5fc4ff';
+    ctx.fillStyle = '#5fc4ff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    for (const step of stage.route) {
+      const pts = simulateStep(step, cfg);
+      if (pts.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Start dot
+      ctx.beginPath();
+      ctx.arc(pts[0].x, pts[0].y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      // Player bbox at contact frame — line is feet/leading-edge but player has volume.
+      const end = pts[pts.length - 1];
+      const dir = step.takeoff?.vxDir ?? (step.wallSide ? -step.wallSide : 0);
+      const bx = dir > 0 ? end.x - PLAYER_W : dir < 0 ? end.x : end.x - PLAYER_W / 2;
+      const by = end.y - PLAYER_H;
+      ctx.strokeRect(bx, by, PLAYER_W, PLAYER_H);
+      ctx.setLineDash([6, 4]);
+    }
+    ctx.restore();
+  }
+
+  return { clear, drawSolids, drawGoal, drawPlayer, drawHud, drawRoute };
 }

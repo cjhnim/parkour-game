@@ -26,32 +26,42 @@ const stage0 = {
 };
 
 // Stage 1: Climbing course. Start bottom-left, reach top-right.
+// Platform constants reused by both solids and route's targetPlatform.
+const P1       = wall(150, SCREEN_H - 130, 140, 16);
+const P2       = wall(380, SCREEN_H - 220, 140, 16);
+const P3       = wall(180, SCREEN_H - 310, 140, 16);
+const P4       = wall(450, SCREEN_H - 400, 140, 16);
+const P5_TRAP  = wall(220, SCREEN_H - 490, 140, 16);
+const GOAL_PLAT = wall(560, SCREEN_H - 530, 200, 16);
+
 const stage1 = {
   id: 1,
   name: 'Stage 1 — Climb',
   spawn: { x: 60, y: SCREEN_H - 80 - PLAYER_H },
   // Route: ordered steps the player must complete to clear the stage.
-  // verticalGap: height to climb (px). horizontalGap: horizontal distance with no overlap (px).
-  // P4 → Goal은 벽 점프 필요 — 일반 점프 도달 불가 (의도된 설계)
-  // P5는 함정: 올라갈 수 있지만 Goal에 도달 불가
+  // Each step's takeoff point and target platform are explicit. Validator checks
+  // whether the player's bbox can overlap the target's bbox during the trajectory —
+  // this counts both top landing AND side wall-cling as success, matching what's
+  // actually achievable in-game with wall-jump mechanics.
+  // P5는 함정: 올라갈 수 있지만 Goal에 도달 불가.
   route: [
-    { label: 'Floor → P1', verticalGap: 90, horizontalGap:   0 },
-    { label: 'P1 → P2',    verticalGap: 90, horizontalGap:  90 },
-    { label: 'P2 → P3',    verticalGap: 90, horizontalGap:  60 },
-    { label: 'P3 → P4',    verticalGap: 90, horizontalGap: 130 },
+    { label: 'Floor → P1', type: 'jump',
+      takeoff: { x: 100, y: SCREEN_H - 40, vxDir: 1 }, targetPlatform: P1 },
+    { label: 'P1 → P2', type: 'jump',
+      takeoff: { x: 290, y: SCREEN_H - 130, vxDir: 1 }, targetPlatform: P2 },
+    { label: 'P2 → P3', type: 'jump',
+      takeoff: { x: 380, y: SCREEN_H - 220, vxDir: -1 }, targetPlatform: P3 },
+    { label: 'P3 → P4', type: 'jump',
+      takeoff: { x: 320, y: SCREEN_H - 310, vxDir: 1 }, targetPlatform: P4 },
+    { label: 'P4 → Goal', type: 'jump',
+      takeoff: { x: 482, y: SCREEN_H - 400, vxDir: 1 }, targetPlatform: GOAL_PLAT },
   ],
   solids: [
     wall(0, SCREEN_H - 40, SCREEN_W, 40),     // floor
     wall(0, 0, 20, SCREEN_H),                  // left wall
     wall(SCREEN_W - 20, 0, 20, SCREEN_H),     // right wall
     wall(0, 0, SCREEN_W, 20),                  // ceiling
-    // Climbing platforms (bottom → top, zigzag)
-    wall(150, SCREEN_H - 130, 140, 16),
-    wall(380, SCREEN_H - 220, 140, 16),
-    wall(180, SCREEN_H - 310, 140, 16),
-    wall(450, SCREEN_H - 400, 140, 16),        // P4 (정규 루트 마지막)
-    wall(220, SCREEN_H - 490, 140, 16),        // P5 (함정)
-    wall(560, SCREEN_H - 530, 200, 16),        // goal platform (y=110)
+    P1, P2, P3, P4, P5_TRAP, GOAL_PLAT,
   ],
   goal: { x: 700, y: SCREEN_H - 570, w: 40, h: 40 },
 };

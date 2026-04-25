@@ -6,6 +6,12 @@
 
 ## 버전
 
+**v0.8** — 검증기 모델을 bbox-overlap으로 통합 + 경로 시각화
+- 모든 route step을 `targetPlatform: {x, y, w, h}`로 통일 (verticalGap·horizontalGap 제거)
+- validator는 trajectory 중 player bbox와 target bbox가 겹치는지 검사 — top landing이든 side wall-cling이든 통과로 판정 (벽 메카닉으로 측면→상단 전환이 가능하므로)
+- 튜닝 패널 열면 캔버스에 통과 경로를 점선으로 시각화 (각 step 끝에 player bbox 표시)
+- `side-cling-clear` step type은 'jump'로 흡수 (동일 로직)
+
 **v0.7** — Stage 1 재설계: Goal 낮춤(y=110), P4→Goal 벽 메카닉, P5 함정화
 
 **v0.6** — 검증기 수평 간격 체크에 PLAYER_W 반영 + P5→Goal route 보정 (160→150)
@@ -109,15 +115,22 @@
 
 튜닝 패널에서 물리 파라미터를 바꿀 때 스테이지를 클리어할 수 있는지 실시간으로 판독한다.
 
-- `computeMaxJumpHeight(cfg)` — 현재 config로 도달 가능한 최대 점프 높이 시뮬레이션
+- `computeMaxJumpHeight(cfg)` — 현재 config로 도달 가능한 최대 점프 높이
 - `computeMaxHorizontalReach(cfg)` — 점프 중 최대 수평 이동 거리
-- `validateStage(stage, cfg)` — route 각 구간의 수직·수평 간격을 capability와 비교 → `{ clearable, issues[], capabilities }`
+- `validateStage(stage, cfg)` — route 각 step을 시뮬레이션 → `{ clearable, issues[], capabilities }`
 
-**스테이지 route**: 각 구간마다 필요한 `verticalGap`·`horizontalGap`(px)을 명시. 벽 점프는 미고려 (보수적 기준).
-- `horizontalGap` 체크: `gap + PLAYER_W > maxHorizontalReach` — 플레이어 너비만큼 실제 이동 거리가 늘어나는 것을 반영
-- `horizontalGap` 값은 플랫폼 edge-to-edge air gap 기준이나, P5→Goal은 플랫폼 폭 이용분을 감안해 보수적으로 설정
+**스테이지 route**: 각 step에 `takeoff: {x, y, vxDir}` (출발 지점 및 방향) + `targetPlatform: {x, y, w, h}` 명시.
 
-**패널 표시**: ⚙ Tuning 패널 하단 CLEARABILITY 섹션에 실시간 표시. 불가 시 문제 구간과 필요/가능 거리를 함께 표시.
+**검증 모델 (bbox-overlap)**: 출발점에서 풀스피드로 점프했을 때의 포물선 중 어떤 프레임에서든 플레이어 bbox와 타깃 플랫폼 bbox가 겹치면 통과로 판정한다. 상단 착지뿐 아니라 측면 충돌(벽 클링)도 포함된다 — 측면에 닿으면 벽 점프 + 입력 제어로 상단 착지가 가능하기 때문.
+
+**Step types**:
+- `jump` — 타깃 플랫폼에 bbox 충돌 (대부분의 step)
+- `wall-touch` — 임의 벽까지 수평 도달 (vertical 무관)
+- `wall-jump-land` — 벽 점프 포물선이 타깃 플랫폼 상단에 착지
+
+**패널 표시**: ⚙ Tuning 패널 하단 CLEARABILITY 섹션에 실시간 표시. 불가 시 문제 step과 type(`too_high`/`too_far`) 정보 표시.
+
+**경로 시각화 (`src/render.js > drawRoute`)**: 패널이 열려 있을 때 각 step의 시뮬레이션 trajectory를 점선으로 그리고, 종료 지점에 player bbox(32×24)를 박스로 표시한다.
 
 ---
 
@@ -128,8 +141,8 @@
 | `test/physics.test.js` | 17 | ✅ 전부 통과 |
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 13 | ✅ 전부 통과 |
-| `test/validator.test.js` | 13 | ✅ 전부 통과 |
-| **합계** | **52** | **✅** |
+| `test/validator.test.js` | 20 | ✅ 전부 통과 |
+| **합계** | **59** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 

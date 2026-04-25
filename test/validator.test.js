@@ -86,3 +86,115 @@ test('tutorial_stage_always_clearable_because_no_goal', () => {
   const result = validateStage(getStage(0), DEFAULTS);
   assert.equal(result.clearable, true);
 });
+
+
+// --- combined parabolic check ---
+
+// Vertical and horizontal capabilities checked together, not independently.
+// A step where each is individually feasible may still fail because the
+// player can't be at the target height and target x simultaneously.
+test('combined_check_rejects_step_unreachable_in_single_jump', () => {
+  // Target is high enough that bbox can overlap during descent, but the player
+  // cannot reach the target horizontally before falling past its y range.
+  const stage = {
+    id: 99, name: 'combo', spawn: { x: 0, y: 0 },
+    route: [{
+      label: 'tight', type: 'jump',
+      takeoff: { x: 0, y: 300, vxDir: 1 },
+      targetPlatform: { x: 200, y: 190, w: 100, h: 16 },
+    }],
+    solids: [], goal: null,
+  };
+  const result = validateStage(stage, DEFAULTS);
+  assert.equal(result.clearable, false);
+  assert.equal(result.issues[0].type, 'too_far');
+});
+
+
+// --- wall-touch step ---
+
+test('wall_touch_step_clearable_when_within_reach', () => {
+  const stage = {
+    id: 99, name: 'wt', spawn: { x: 0, y: 0 },
+    route: [{ label: 'wall', type: 'wall-touch', horizontalGap: 100 }],
+    solids: [], goal: null,
+  };
+  assert.equal(validateStage(stage, DEFAULTS).clearable, true);
+});
+
+test('wall_touch_step_fails_when_unreachable', () => {
+  const stage = {
+    id: 99, name: 'wt', spawn: { x: 0, y: 0 },
+    route: [{ label: 'wall', type: 'wall-touch', horizontalGap: 99999 }],
+    solids: [], goal: null,
+  };
+  const result = validateStage(stage, DEFAULTS);
+  assert.equal(result.clearable, false);
+  assert.equal(result.issues[0].type, 'too_far');
+});
+
+
+// --- wall-jump-land step ---
+
+test('wall_jump_land_lands_on_nearby_target', () => {
+  const stage = {
+    id: 99, name: 'wjl', spawn: { x: 0, y: 0 },
+    route: [{
+      label: 'wj',
+      type: 'wall-jump-land',
+      wallX: 940, wallTouchY: 300, wallSide: 1,
+      targetPlatform: { x: 700, y: 320, w: 100 },
+    }],
+    solids: [], goal: null,
+  };
+  assert.equal(validateStage(stage, DEFAULTS).clearable, true);
+});
+
+// --- jump step: bbox-overlap also counts side-face contact as reachable ---
+
+test('jump_succeeds_via_side_face_contact', () => {
+  // P4 left edge → Goal platform's left face (Stage 1 wall-jump route).
+  // Player feet never lands on top during the trajectory, but bbox overlaps
+  // goal's left face — counts as reachable since wall-cling + wall-jump clears.
+  const stage = {
+    id: 99, name: 'scc', spawn: { x: 0, y: 0 },
+    route: [{
+      label: 'P4→Goal', type: 'jump',
+      takeoff: { x: 482, y: 240, vxDir: 1 },
+      targetPlatform: { x: 560, y: 110, w: 200, h: 16 },
+    }],
+    solids: [], goal: null,
+  };
+  assert.equal(validateStage(stage, DEFAULTS).clearable, true);
+});
+
+test('jump_fails_when_target_too_high_for_bbox_overlap', () => {
+  // Target above max jump height (even with bbox extension upward).
+  const stage = {
+    id: 99, name: 'too-high', spawn: { x: 0, y: 0 },
+    route: [{
+      label: 'too high', type: 'jump',
+      takeoff: { x: 482, y: 240, vxDir: 1 },
+      targetPlatform: { x: 560, y: 0, w: 200, h: 16 },
+    }],
+    solids: [], goal: null,
+  };
+  const result = validateStage(stage, DEFAULTS);
+  assert.equal(result.clearable, false);
+  assert.equal(result.issues[0].type, 'too_high');
+});
+
+
+test('wall_jump_land_fails_when_target_out_of_range', () => {
+  const stage = {
+    id: 99, name: 'wjl', spawn: { x: 0, y: 0 },
+    route: [{
+      label: 'wj',
+      type: 'wall-jump-land',
+      wallX: 940, wallTouchY: 300, wallSide: 1,
+      targetPlatform: { x: 100, y: 100, w: 50 }, // too far + too high
+    }],
+    solids: [], goal: null,
+  };
+  assert.equal(validateStage(stage, DEFAULTS).clearable, false);
+});
