@@ -7,6 +7,7 @@ const KEY_MAP = {
   KeyD: 'right',
   ArrowRight: 'right',
   KeyW: 'jump',
+  ArrowUp: 'jump',
   KeyR: 'restart',
   Space: 'next', // advance from tutorial → stage 1, or after clear
 };
