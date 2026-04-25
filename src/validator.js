@@ -1,51 +1,38 @@
 // Pure stage-clearability validation functions.
 // Simulates player capability from current physics config and checks each route step.
 
-// Simulate one frame matching the game loop order: hold → gravity → integrate.
-function simFrame(vy, heldFrames, cfg) {
-  if (heldFrames < cfg.jumpHoldMaxFrames && vy < 0) vy -= cfg.jumpHoldForce;
-  vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
-  return vy;
-}
-
-// Max height the player can reach above their feet in a full-hold jump.
+// Max height the player can reach above their feet.
 export function computeMaxJumpHeight(cfg) {
-  let vy = cfg.jumpVelocity; // negative = upward
+  let vy = cfg.jumpVelocity;
   let y = 0;
   let peak = 0;
-  let heldFrames = 0;
+  let frames = 0;
 
-  while (vy < 0 && heldFrames < 10000) {
-    vy = simFrame(vy, heldFrames, cfg);
+  while (vy < 0 && frames < 10000) {
+    vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
     y += vy;
     if (y < peak) peak = y;
-    heldFrames++;
+    frames++;
   }
-  return -peak; // positive: pixels above start
+  return -peak;
 }
 
 // Total frames from jump takeoff until the player returns to the same height.
 function computeAirtime(cfg) {
   let vy = cfg.jumpVelocity;
   let y = 0;
-  let heldFrames = 0;
   let frames = 0;
 
-  // Rising phase
   while (vy < 0 && frames < 10000) {
-    vy = simFrame(vy, heldFrames, cfg);
+    vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
     y += vy;
-    heldFrames++;
     frames++;
   }
-
-  // Falling phase: until back to y >= 0
   while (y < 0 && frames < 10000) {
     vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
     y += vy;
     frames++;
   }
-
   return frames;
 }
 

@@ -51,13 +51,6 @@ export function accelerateVx(currentVx, input, cfg = DEFAULTS) {
   return Math.max(-cfg.moveSpeed, Math.min(cfg.moveSpeed, vx));
 }
 
-// Variable jump: apply extra upward force while jump key is held and player is rising.
-// `heldFrames` counts how many frames the key has been held since the jump started.
-export function applyJumpHold(vy, jumpHeld, heldFrames, cfg = DEFAULTS) {
-  if (!jumpHeld || heldFrames >= cfg.jumpHoldMaxFrames || vy >= 0) return vy;
-  return vy - cfg.jumpHoldForce;
-}
-
 export function step(pos, vel) {
   return { x: pos.x + vel.vx, y: pos.y + vel.vy };
 }

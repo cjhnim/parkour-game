@@ -28,8 +28,16 @@ export function createRenderer(canvas) {
   }
 
   function drawPlayer(player) {
-    ctx.fillStyle = '#5fc4ff';
-    ctx.fillRect(player.x, player.y, player.w, player.h);
+    const { x, y, w, h } = player;
+    const S = 4;
+    ctx.fillStyle = '#BF7B52';
+    ctx.fillRect(x, y + S, w, S * 4);
+    ctx.fillStyle = '#1a1a24';
+    ctx.fillRect(x + S,     y + S * 2, S, S);
+    ctx.fillRect(x + S * 4, y + S * 2, S, S);
+    ctx.fillStyle = '#BF7B52';
+    ctx.fillRect(x,         y + S * 6, S * 2, S * 2);
+    ctx.fillRect(x + S * 4, y + S * 6, S * 2, S * 2);
   }
 
   function drawHud({ stageName, time, status, hint }) {

@@ -4,7 +4,6 @@ import {
   applyGravity,
   computeVx,
   accelerateVx,
-  applyJumpHold,
   tryJump,
   tryWallJump,
   step,
@@ -105,24 +104,3 @@ test('accelerate_vx_can_reverse_direction', () => {
   assert.ok(vx < 0, 'should eventually move left');
 });
 
-// --- applyJumpHold ---
-
-test('jump_hold_adds_upward_force_while_rising_and_held', () => {
-  const vy = applyJumpHold(-8, true, 3);
-  assert.ok(vy < -8, 'should push further upward');
-});
-
-test('jump_hold_does_not_apply_when_falling', () => {
-  const vy = applyJumpHold(2, true, 3);
-  assert.equal(vy, 2, 'no boost when vy >= 0');
-});
-
-test('jump_hold_does_not_apply_when_key_not_held', () => {
-  const vy = applyJumpHold(-8, false, 3);
-  assert.equal(vy, -8, 'no boost when key released');
-});
-
-test('jump_hold_stops_after_max_frames_exceeded', () => {
-  const vy = applyJumpHold(-8, true, 999);
-  assert.equal(vy, -8, 'no boost after max frames');
-});

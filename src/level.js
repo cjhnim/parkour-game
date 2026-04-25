@@ -38,7 +38,7 @@ const stage1 = {
     { label: 'P2 → P3',             verticalGap:  90, horizontalGap:  60 },
     { label: 'P3 → P4',             verticalGap:  90, horizontalGap: 130 },
     { label: 'P4 → P5',             verticalGap:  90, horizontalGap:  90 },
-    { label: 'P5 → Goal platform',  verticalGap:  70, horizontalGap: 200 },
+    { label: 'P5 → Goal platform',  verticalGap:  70, horizontalGap: 160 },
   ],
   solids: [
     wall(0, SCREEN_H - 40, SCREEN_W, 40),     // floor
@@ -60,6 +60,11 @@ export const STAGES = [stage0, stage1];
 
 export function getStage(id) {
   return STAGES.find((s) => s.id === id) ?? STAGES[0];
+}
+
+// Returns the initial player rect for a stage's spawn point.
+export function makePlayer(stage) {
+  return { x: stage.spawn.x, y: stage.spawn.y, w: PLAYER_W, h: PLAYER_H };
 }
 
 // Did the player overlap the stage's goal zone?

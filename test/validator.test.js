@@ -26,17 +26,6 @@ test('max_jump_height_increases_with_stronger_jump_velocity', () => {
   assert.ok(strong > weak);
 });
 
-test('max_jump_height_increases_with_more_hold_force', () => {
-  const noHold   = computeMaxJumpHeight({ ...DEFAULTS, jumpHoldForce: 0 });
-  const withHold = computeMaxJumpHeight({ ...DEFAULTS, jumpHoldForce: 1.5 });
-  assert.ok(withHold > noHold);
-});
-
-test('max_jump_height_increases_with_more_hold_frames', () => {
-  const few  = computeMaxJumpHeight({ ...DEFAULTS, jumpHoldMaxFrames: 2  });
-  const many = computeMaxJumpHeight({ ...DEFAULTS, jumpHoldMaxFrames: 20 });
-  assert.ok(many > few);
-});
 
 // --- computeMaxHorizontalReach ---
 
@@ -65,13 +54,13 @@ test('stage1_is_clearable_with_default_config', () => {
 });
 
 test('stage1_not_clearable_when_gravity_is_extreme', () => {
-  const result = validateStage(getStage(1), { ...DEFAULTS, gravity: 2.0, jumpHoldForce: 0 });
+  const result = validateStage(getStage(1), { ...DEFAULTS, gravity: 2.0 });
   assert.equal(result.clearable, false);
   assert.ok(result.issues.length > 0);
 });
 
 test('stage1_not_clearable_when_jump_velocity_too_weak', () => {
-  const result = validateStage(getStage(1), { ...DEFAULTS, jumpVelocity: -2, jumpHoldForce: 0 });
+  const result = validateStage(getStage(1), { ...DEFAULTS, jumpVelocity: -2 });
   assert.equal(result.clearable, false);
 });
 
@@ -83,7 +72,7 @@ test('stage1_not_clearable_when_move_speed_too_slow_for_horizontal_gap', () => {
 });
 
 test('validate_issues_contain_failing_step_label', () => {
-  const result = validateStage(getStage(1), { ...DEFAULTS, jumpVelocity: -2, jumpHoldForce: 0 });
+  const result = validateStage(getStage(1), { ...DEFAULTS, jumpVelocity: -2 });
   assert.ok(result.issues[0].step, 'issue should reference the failing step');
 });
 

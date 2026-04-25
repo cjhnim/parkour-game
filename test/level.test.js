@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STAGES, getStage, hasReachedGoal, isOutOfBounds, SCREEN_H } from '../src/level.js';
+import { STAGES, getStage, makePlayer, hasReachedGoal, isOutOfBounds, SCREEN_H, PLAYER_W, PLAYER_H } from '../src/level.js';
 
 test('stages_list_contains_tutorial_and_stage_one', () => {
   assert.ok(STAGES.length >= 2);
@@ -54,4 +54,26 @@ test('player_below_screen_returns_out_of_bounds', () => {
 
 test('player_within_screen_is_in_bounds', () => {
   assert.equal(isOutOfBounds({ x: 0, y: 100, w: 24, h: 32 }), false);
+});
+
+// --- makePlayer ---
+// 이 테스트는 reset() 등에서 선언되지 않은 변수를 참조하는 실수를 방지한다.
+// 초기 플레이어 상태의 모든 필드가 정확한 값으로 채워지는지 검증한다.
+
+test('makePlayer_places_player_at_stage_spawn', () => {
+  const stage = getStage(1);
+  const player = makePlayer(stage);
+  assert.equal(player.x, stage.spawn.x);
+  assert.equal(player.y, stage.spawn.y);
+});
+
+test('makePlayer_uses_standard_player_dimensions', () => {
+  const player = makePlayer(getStage(0));
+  assert.equal(player.w, PLAYER_W);
+  assert.equal(player.h, PLAYER_H);
+});
+
+test('makePlayer_returns_only_expected_fields', () => {
+  const player = makePlayer(getStage(0));
+  assert.deepEqual(Object.keys(player).sort(), ['h', 'w', 'x', 'y']);
 });

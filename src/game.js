@@ -3,7 +3,6 @@
 import {
   applyGravity,
   accelerateVx,
-  applyJumpHold,
   tryJump,
   tryWallJump,
 } from './physics.js';
@@ -11,11 +10,10 @@ import { config } from './tuning.js';
 import { resolveMovement } from './collision.js';
 import {
   getStage,
+  makePlayer,
   hasReachedGoal,
   isOutOfBounds,
   STAGES,
-  PLAYER_W,
-  PLAYER_H,
 } from './level.js';
 import { createInput } from './input.js';
 import { createRenderer } from './render.js';
@@ -34,11 +32,6 @@ export function startGame(canvas, { onStageChange } = {}) {
   let elapsed = 0;
   let cleared = false;
   let clearTime = 0;
-  let jumpHeldFrames = 0;
-
-  function makePlayer(s) {
-    return { x: s.spawn.x, y: s.spawn.y, w: PLAYER_W, h: PLAYER_H };
-  }
 
   function reset(toStageId = stageId) {
     stageId = toStageId;
@@ -51,7 +44,6 @@ export function startGame(canvas, { onStageChange } = {}) {
     startedAt = performance.now();
     elapsed = 0;
     cleared = false;
-    jumpHeldFrames = 0;
   }
 
   function tick() {
@@ -77,21 +69,11 @@ export function startGame(canvas, { onStageChange } = {}) {
       if (input.justPressed('jump')) {
         if (grounded) {
           vel.vy = tryJump(vel.vy, true, config);
-          jumpHeldFrames = 0;
         } else if (wallSide !== 0) {
           const r = tryWallJump(vel.vx, vel.vy, wallSide, config);
           vel.vx = r.vx;
           vel.vy = r.vy;
-          jumpHeldFrames = 0;
         }
-      }
-
-      // Variable jump: extra upward force while key held and rising
-      if (keys.jump) {
-        vel.vy = applyJumpHold(vel.vy, true, jumpHeldFrames, config);
-        jumpHeldFrames++;
-      } else {
-        jumpHeldFrames = config.jumpHoldMaxFrames; // stop boost on release
       }
 
       // Gravity (wall-slide cap when sliding down a wall)
@@ -104,9 +86,6 @@ export function startGame(canvas, { onStageChange } = {}) {
       vel = result.vel;
       grounded = result.grounded;
       wallSide = result.wallSide;
-
-      // Reset jumpHeldFrames on landing
-      if (grounded) jumpHeldFrames = config.jumpHoldMaxFrames;
 
       // Out-of-bounds → respawn
       if (isOutOfBounds(player)) {

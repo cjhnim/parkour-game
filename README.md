@@ -21,7 +21,7 @@ Node 내장 테스트 러너 사용 (의존성 없음).
 node --test test/*.test.js
 ```
 
-현재 40개 테스트, 전부 통과.
+현재 52개 테스트, 전부 통과.
 
 ## 조작
 
@@ -29,7 +29,7 @@ node --test test/*.test.js
 |---|---|
 | A / ← | 왼쪽 이동 |
 | D / → | 오른쪽 이동 |
-| W / ↑ | 점프 / 벽 점프 |
+| W / ↑ | 점프 (고정 높이) / 벽 점프 |
 | SPACE | 다음 스테이지 (튜토리얼 → Stage 1, 클리어 후) |
 | R | 재시작 |
 
@@ -52,6 +52,7 @@ parkour-game/
 │   ├── physics.js   순수 물리 함수 (유닛 테스트)
 │   ├── collision.js 순수 AABB 충돌 함수 (유닛 테스트)
 │   ├── level.js     스테이지 데이터 + 판정 함수 (유닛 테스트)
+│   ├── validator.js 스테이지 클리어 가능성 검증 (유닛 테스트)
 │   ├── tuning.js    런타임 물리 config (기본값 + 뮤터블 객체)
 │   ├── panel.js     튜닝 패널 DOM (슬라이더 + 리셋)
 │   ├── input.js     키보드 입력
@@ -60,5 +61,6 @@ parkour-game/
 └── test/
     ├── physics.test.js
     ├── collision.test.js
-    └── level.test.js
+    ├── level.test.js
+    └── validator.test.js
 ```
