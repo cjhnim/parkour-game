@@ -5,15 +5,11 @@ import { config, DEFAULTS, resetToDefaults } from './tuning.js';
 import { validateStage } from './validator.js';
 
 const SLIDERS = [
-  { key: 'gravity',           label: 'Gravity',             min: 0.1, max: 2.0,  step: 0.05 },
-  { key: 'maxFallSpeed',      label: 'Max Fall Speed',      min: 1,   max: 30,   step: 0.5  },
-  { key: 'wallSlideMaxFall',  label: 'Wall Slide Fall',     min: 0.5, max: 10,   step: 0.25 },
-  { key: 'moveSpeed',         label: 'Move Speed',          min: 1,   max: 12,   step: 0.5  },
-  { key: 'moveAccel',         label: 'Move Accel',          min: 0.1, max: 3.0,  step: 0.1  },
-  { key: 'moveFriction',      label: 'Move Friction',       min: 0.1, max: 1.0,  step: 0.05 },
-  { key: 'jumpVelocity',      label: 'Jump Height',         min: -20, max: -4,   step: 0.5  },
-  { key: 'wallJumpVx',        label: 'Wall Jump H-Kick',    min: 1,   max: 15,   step: 0.5  },
-  { key: 'wallJumpVy',        label: 'Wall Jump V-Kick',    min: -20, max: -4,   step: 0.5  },
+  { key: 'gravity',      label: 'Gravity',          min: 0.1, max: 2.0, step: 0.05 },
+  { key: 'jumpVelocity', label: 'Jump Height',      min: -20, max: -4,  step: 0.5  },
+  { key: 'moveSpeed',    label: 'Move Speed',       min: 1,   max: 12,  step: 0.5  },
+  { key: 'wallJumpVx',   label: 'Wall Jump H-Kick', min: 1,   max: 15,  step: 0.5  },
+  { key: 'wallJumpVy',   label: 'Wall Jump V-Kick', min: -20, max: -4,  step: 0.5  },
 ];
 
 export function createPanel() {

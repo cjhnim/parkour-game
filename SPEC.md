@@ -6,6 +6,8 @@
 
 ## 버전
 
+**v0.11** — Tuning 패널 슬림화. 게임성에 직접 영향 주는 5개(`gravity`·`jumpVelocity`·`moveSpeed`·`wallJumpVx`·`wallJumpVy`)만 노출. 나머지 4개는 DEFAULTS 고정값으로 유지.
+
 **v0.10** — 코드 정리
 - `panel.js`: 동작 안 하던 슬라이더 2개(`jumpHoldForce`·`jumpHoldMaxFrames`) 제거. 가변 점프 제거 후 남은 흔적
 - `physics.js`: 미사용 함수(`computeVx`·`step`) 및 DEFAULTS 미러 상수 7개 제거. 테스트도 `DEFAULTS` 직접 참조로 변경
@@ -50,19 +52,19 @@
 
 ### 물리 파라미터 (`src/tuning.js` — 런타임 변경 가능)
 
-| 파라미터 | 기본값 | 설명 |
-|---|---|---|
-| `gravity` | 0.7 | 프레임당 중력 가속도 (px/frame²) |
-| `maxFallSpeed` | 16 | 최대 낙하 속도 |
-| `wallSlideMaxFall` | 3 | 벽 슬라이드 중 최대 낙하 속도 |
-| `moveSpeed` | 5 | 수평 이동 최대 속도 |
-| `moveAccel` | 0.8 | 이동 가속도 — 키를 누를 때마다 vx에 더해지는 값 |
-| `moveFriction` | 0.75 | 이동 마찰 계수 — 키를 뗄 때 vx에 곱해지는 값 (0~1) |
-| `jumpVelocity` | -13 | 점프 초기 수직 속도 (고정 높이) |
-| `wallJumpVx` | 6 | 벽 점프 수평 킥 속도 |
-| `wallJumpVy` | -11 | 벽 점프 수직 킥 속도 |
+| 파라미터 | 기본값 | 설명 | 패널 노출 |
+|---|---|---|---|
+| `gravity` | 0.7 | 프레임당 중력 가속도 (px/frame²) | ✅ |
+| `jumpVelocity` | -13 | 점프 초기 수직 속도 (고정 높이) | ✅ |
+| `moveSpeed` | 5 | 수평 이동 최대 속도 | ✅ |
+| `wallJumpVx` | 6 | 벽 점프 수평 킥 속도 | ✅ |
+| `wallJumpVy` | -11 | 벽 점프 수직 킥 속도 | ✅ |
+| `maxFallSpeed` | 16 | 최대 낙하 속도 | — |
+| `wallSlideMaxFall` | 3 | 벽 슬라이드 중 최대 낙하 속도 | — |
+| `moveAccel` | 0.8 | 이동 가속도 — 키를 누를 때마다 vx에 더해지는 값 | — |
+| `moveFriction` | 0.75 | 이동 마찰 계수 — 키를 뗄 때 vx에 곱해지는 값 (0~1) | — |
 
-파라미터는 브라우저 **Tuning 패널**(왼쪽 토글)에서 슬라이더로 실시간 조절 가능. "↺ Reset to defaults"로 초기값 복원.
+**Tuning 패널** (왼쪽 토글)에는 게임성에 직접 영향을 주는 5개 파라미터만 노출. 나머지는 `tuning.js`의 DEFAULTS로 고정 유지. "↺ Reset to defaults"로 초기값 복원.
 
 ### 조작
 
