@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   applyGravity,
   computeVx,
+  accelerateVx,
+  applyJumpHold,
   tryJump,
   tryWallJump,
   step,
@@ -68,4 +70,59 @@ test('wall_jump_no_effect_without_wall', () => {
 
 test('step_integrates_position_with_velocity', () => {
   assert.deepEqual(step({ x: 10, y: 20 }, { vx: 3, vy: -4 }), { x: 13, y: 16 });
+});
+
+// --- accelerateVx ---
+
+test('accelerate_vx_increases_toward_max_when_right_held', () => {
+  const vx = accelerateVx(0, { left: false, right: true });
+  assert.ok(vx > 0, 'vx should increase');
+});
+
+test('accelerate_vx_decreases_toward_zero_when_no_input', () => {
+  const vx = accelerateVx(4, { left: false, right: false });
+  assert.ok(vx < 4, 'friction should slow down');
+  assert.ok(vx >= 0, 'should not go negative');
+});
+
+test('accelerate_vx_caps_at_move_speed', () => {
+  // Apply many frames of right input
+  let vx = 0;
+  for (let i = 0; i < 100; i++) vx = accelerateVx(vx, { left: false, right: true });
+  assert.equal(vx, MOVE_SPEED);
+});
+
+test('accelerate_vx_snaps_to_zero_when_nearly_stopped', () => {
+  // Very small vx should snap to 0 after friction
+  const vx = accelerateVx(0.05, { left: false, right: false });
+  assert.equal(vx, 0);
+});
+
+test('accelerate_vx_can_reverse_direction', () => {
+  // Moving right, press left → should decelerate and eventually go negative
+  let vx = MOVE_SPEED;
+  for (let i = 0; i < 30; i++) vx = accelerateVx(vx, { left: true, right: false });
+  assert.ok(vx < 0, 'should eventually move left');
+});
+
+// --- applyJumpHold ---
+
+test('jump_hold_adds_upward_force_while_rising_and_held', () => {
+  const vy = applyJumpHold(-8, true, 3);
+  assert.ok(vy < -8, 'should push further upward');
+});
+
+test('jump_hold_does_not_apply_when_falling', () => {
+  const vy = applyJumpHold(2, true, 3);
+  assert.equal(vy, 2, 'no boost when vy >= 0');
+});
+
+test('jump_hold_does_not_apply_when_key_not_held', () => {
+  const vy = applyJumpHold(-8, false, 3);
+  assert.equal(vy, -8, 'no boost when key released');
+});
+
+test('jump_hold_stops_after_max_frames_exceeded', () => {
+  const vy = applyJumpHold(-8, true, 999);
+  assert.equal(vy, -8, 'no boost after max frames');
 });

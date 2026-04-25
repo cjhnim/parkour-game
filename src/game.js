@@ -2,10 +2,12 @@
 
 import {
   applyGravity,
-  computeVx,
+  accelerateVx,
+  applyJumpHold,
   tryJump,
   tryWallJump,
 } from './physics.js';
+import { config } from './tuning.js';
 import { resolveMovement } from './collision.js';
 import {
   getStage,
@@ -32,6 +34,7 @@ export function startGame(canvas) {
   let elapsed = 0;
   let cleared = false;
   let clearTime = 0;
+  let jumpHeldFrames = 0;
 
   function makePlayer(s) {
     return { x: s.spawn.x, y: s.spawn.y, w: PLAYER_W, h: PLAYER_H };
@@ -47,6 +50,7 @@ export function startGame(canvas) {
     startedAt = performance.now();
     elapsed = 0;
     cleared = false;
+    jumpHeldFrames = 0;
   }
 
   function tick() {
@@ -65,23 +69,33 @@ export function startGame(canvas) {
     }
 
     if (!cleared) {
-      // Horizontal velocity from input
-      vel.vx = computeVx(keys);
+      // Acceleration-based horizontal movement
+      vel.vx = accelerateVx(vel.vx, keys, config);
 
-      // Jump (W). Grounded → normal jump. In air against wall → wall jump.
+      // Jump: grounded → normal jump, air + wall → wall jump
       if (input.justPressed('jump')) {
         if (grounded) {
-          vel.vy = tryJump(vel.vy, true);
+          vel.vy = tryJump(vel.vy, true, config);
+          jumpHeldFrames = 0;
         } else if (wallSide !== 0) {
-          const r = tryWallJump(vel.vx, vel.vy, wallSide);
+          const r = tryWallJump(vel.vx, vel.vy, wallSide, config);
           vel.vx = r.vx;
           vel.vy = r.vy;
+          jumpHeldFrames = 0;
         }
+      }
+
+      // Variable jump: extra upward force while key held and rising
+      if (keys.jump) {
+        vel.vy = applyJumpHold(vel.vy, true, jumpHeldFrames, config);
+        jumpHeldFrames++;
+      } else {
+        jumpHeldFrames = config.jumpHoldMaxFrames; // stop boost on release
       }
 
       // Gravity (wall-slide cap when sliding down a wall)
       const sliding = wallSide !== 0 && !grounded && vel.vy > 0;
-      vel.vy = applyGravity(vel.vy, sliding);
+      vel.vy = applyGravity(vel.vy, sliding, config);
 
       // Resolve collisions
       const result = resolveMovement(player, vel, stage.solids);
@@ -89,6 +103,9 @@ export function startGame(canvas) {
       vel = result.vel;
       grounded = result.grounded;
       wallSide = result.wallSide;
+
+      // Reset jumpHeldFrames on landing
+      if (grounded) jumpHeldFrames = config.jumpHoldMaxFrames;
 
       // Out-of-bounds → respawn
       if (isOutOfBounds(player)) {
