@@ -105,7 +105,7 @@ export function startGame(canvas, { onStageChange } = {}) {
     renderer.clear();
     renderer.drawSolids(stage.solids);
     renderer.drawGoal(stage.goal);
-    renderer.drawPlayer(player);
+    renderer.drawPlayer(player, vel.vx);
     renderer.drawHud({
       stageName: stage.name,
       time: cleared ? clearTime : elapsed,

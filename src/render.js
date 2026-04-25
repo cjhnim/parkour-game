@@ -27,13 +27,13 @@ export function createRenderer(canvas) {
     ctx.fillText('GOAL', goal.x + goal.w / 2, goal.y + goal.h / 2 + 5);
   }
 
-  function drawPlayer(player) {
+  function drawPlayer(player, vx = 0) {
     const { x, y, w, h } = player;
-    // SVG viewBox 0 0 24 24 기준 좌표를 player 너비에 맞게 스케일
     const s = w / 24;
     const p = n => Math.round(n * s);
-    // 발바닥이 player 박스 하단에 맞도록 y 오프셋 (SVG 캐릭터 하단 = y=20)
     const yo = h - p(20);
+    // 이동 방향에 따라 눈동자 1.5 SVG 단위 이동
+    const eyeShift = vx > 0 ? p(1.5) : vx < 0 ? -p(1.5) : 0;
 
     ctx.fillStyle = '#D97757';
     ctx.fillRect(x + p(3),   y + yo + p(5),  p(18), p(12)); // 몸통
@@ -44,8 +44,8 @@ export function createRenderer(canvas) {
     ctx.fillRect(x + p(15),  y + yo + p(17), p(1.5), p(3)); // 발 오른쪽 안쪽
     ctx.fillRect(x + p(18),  y + yo + p(17), p(1.5), p(3)); // 발 오른쪽 바깥
     ctx.fillStyle = '#1a1a24';
-    ctx.fillRect(x + p(6),    y + yo + p(8),  p(1.5), p(3)); // 왼눈
-    ctx.fillRect(x + p(16.5), y + yo + p(8),  p(1.5), p(3)); // 오른눈
+    ctx.fillRect(x + p(6)    + eyeShift, y + yo + p(8), p(1.5), p(3)); // 왼눈
+    ctx.fillRect(x + p(16.5) + eyeShift, y + yo + p(8), p(1.5), p(3)); // 오른눈
   }
 
   function drawHud({ stageName, time, status, hint }) {
