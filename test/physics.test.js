@@ -2,51 +2,29 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyGravity,
-  computeVx,
   accelerateVx,
   tryJump,
   tryWallJump,
-  step,
-  GRAVITY,
-  MAX_FALL_SPEED,
-  WALL_SLIDE_MAX_FALL,
-  MOVE_SPEED,
-  JUMP_VELOCITY,
 } from '../src/physics.js';
+import { DEFAULTS } from '../src/tuning.js';
 
 test('gravity_increases_vertical_velocity_each_step', () => {
-  assert.equal(applyGravity(0), GRAVITY);
-  assert.equal(applyGravity(1), 1 + GRAVITY);
+  assert.equal(applyGravity(0), DEFAULTS.gravity);
+  assert.equal(applyGravity(1), 1 + DEFAULTS.gravity);
 });
 
 test('gravity_caps_at_max_fall_speed', () => {
-  assert.equal(applyGravity(MAX_FALL_SPEED + 5), MAX_FALL_SPEED);
+  assert.equal(applyGravity(DEFAULTS.maxFallSpeed + 5), DEFAULTS.maxFallSpeed);
 });
 
 test('wall_slide_caps_falling_speed_lower_than_normal', () => {
-  const result = applyGravity(MAX_FALL_SPEED, true);
-  assert.equal(result, WALL_SLIDE_MAX_FALL);
-  assert.ok(result < MAX_FALL_SPEED);
-});
-
-test('horizontal_velocity_is_zero_when_no_input', () => {
-  assert.equal(computeVx({ left: false, right: false }), 0);
-});
-
-test('horizontal_velocity_is_negative_when_left_pressed', () => {
-  assert.equal(computeVx({ left: true, right: false }), -MOVE_SPEED);
-});
-
-test('horizontal_velocity_is_positive_when_right_pressed', () => {
-  assert.equal(computeVx({ left: false, right: true }), MOVE_SPEED);
-});
-
-test('horizontal_velocity_cancels_when_both_pressed', () => {
-  assert.equal(computeVx({ left: true, right: true }), 0);
+  const result = applyGravity(DEFAULTS.maxFallSpeed, true);
+  assert.equal(result, DEFAULTS.wallSlideMaxFall);
+  assert.ok(result < DEFAULTS.maxFallSpeed);
 });
 
 test('jump_only_applies_when_grounded', () => {
-  assert.equal(tryJump(0, true), JUMP_VELOCITY);
+  assert.equal(tryJump(0, true), DEFAULTS.jumpVelocity);
   assert.equal(tryJump(5, false), 5); // unchanged in air
 });
 
@@ -67,10 +45,6 @@ test('wall_jump_no_effect_without_wall', () => {
   assert.deepEqual(r, { vx: 3, vy: 5 });
 });
 
-test('step_integrates_position_with_velocity', () => {
-  assert.deepEqual(step({ x: 10, y: 20 }, { vx: 3, vy: -4 }), { x: 13, y: 16 });
-});
-
 // --- accelerateVx ---
 
 test('accelerate_vx_increases_toward_max_when_right_held', () => {
@@ -88,7 +62,7 @@ test('accelerate_vx_caps_at_move_speed', () => {
   // Apply many frames of right input
   let vx = 0;
   for (let i = 0; i < 100; i++) vx = accelerateVx(vx, { left: false, right: true });
-  assert.equal(vx, MOVE_SPEED);
+  assert.equal(vx, DEFAULTS.moveSpeed);
 });
 
 test('accelerate_vx_snaps_to_zero_when_nearly_stopped', () => {
@@ -99,8 +73,7 @@ test('accelerate_vx_snaps_to_zero_when_nearly_stopped', () => {
 
 test('accelerate_vx_can_reverse_direction', () => {
   // Moving right, press left → should decelerate and eventually go negative
-  let vx = MOVE_SPEED;
+  let vx = DEFAULTS.moveSpeed;
   for (let i = 0; i < 30; i++) vx = accelerateVx(vx, { left: true, right: false });
   assert.ok(vx < 0, 'should eventually move left');
 });
-

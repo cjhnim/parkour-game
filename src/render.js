@@ -79,60 +79,37 @@ export function createRenderer(canvas) {
   function simulateStep(step, cfg) {
     const pts = [];
     const t = step.takeoff;
+    if (!t) return pts;
 
-    if (step.type === 'jump' || step.type === 'wall-touch') {
-      if (!t) return pts;
-      const vxDir = t.vxDir ?? 0;
-      let x = t.x, y = t.y;
-      // For 'jump' steps targeting a platform, pick vx so contact happens near peak y
-      // (cleaner visual). Player can pick any vx in [0, moveSpeed] via input control.
-      let vx;
-      if (step.type === 'jump' && step.targetPlatform && vxDir !== 0) {
-        const tp = step.targetPlatform;
-        const dx = vxDir > 0 ? tp.x - t.x : (tp.x + tp.w) - t.x;
-        const peakFrame = Math.max(1, Math.round(-cfg.jumpVelocity / cfg.gravity));
-        const optimal = dx / peakFrame;
-        vx = Math.max(-cfg.moveSpeed, Math.min(cfg.moveSpeed, optimal));
-      } else {
-        vx = vxDir * cfg.moveSpeed;
-      }
-      let vy = cfg.jumpVelocity;
-      pts.push({ x, y });
-      for (let f = 0; f < 200; f++) {
-        vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
-        x += vx;
-        y += vy;
-        pts.push({ x, y });
-        if (step.type === 'jump' && step.targetPlatform) {
-          const tp = step.targetPlatform;
-          const pLeft  = vxDir > 0 ? x - PLAYER_W : vxDir < 0 ? x : x - PLAYER_W / 2;
-          const pRight = vxDir > 0 ? x : vxDir < 0 ? x + PLAYER_W : x + PLAYER_W / 2;
-          if (pRight >= tp.x && pLeft <= tp.x + tp.w &&
-              y >= tp.y && (y - PLAYER_H) <= tp.y + tp.h) break;
-        } else if (step.type === 'wall-touch') {
-          if (Math.abs(x - t.x) >= step.horizontalGap) break;
-        }
-        if (y > t.y + 600) break;
-      }
-    } else if (step.type === 'wall-jump-land') {
-      const side = step.wallSide;
-      let x = step.wallX - side * (PLAYER_W / 2);
-      let y = step.wallTouchY;
-      let vx = -side * cfg.wallJumpVx;
-      let vy = cfg.wallJumpVy;
+    const vxDir = t.vxDir ?? 0;
+    let x = t.x, y = t.y;
+    // Pick vx so contact happens near peak y (cleaner visual). Player can pick
+    // any vx in [0, moveSpeed] via input control.
+    let vx;
+    if (step.targetPlatform && vxDir !== 0) {
       const tp = step.targetPlatform;
+      const dx = vxDir > 0 ? tp.x - t.x : (tp.x + tp.w) - t.x;
+      const peakFrame = Math.max(1, Math.round(-cfg.jumpVelocity / cfg.gravity));
+      const optimal = dx / peakFrame;
+      vx = Math.max(-cfg.moveSpeed, Math.min(cfg.moveSpeed, optimal));
+    } else {
+      vx = vxDir * cfg.moveSpeed;
+    }
+    let vy = cfg.jumpVelocity;
+    pts.push({ x, y });
+    for (let f = 0; f < 200; f++) {
+      vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
+      x += vx;
+      y += vy;
       pts.push({ x, y });
-      for (let f = 0; f < 200; f++) {
-        const prevY = y;
-        vy = Math.min(vy + cfg.gravity, cfg.maxFallSpeed);
-        x += vx;
-        y += vy;
-        pts.push({ x, y });
-        if (vy > 0 && prevY < tp.y && y >= tp.y) {
-          if (x + PLAYER_W / 2 >= tp.x && x - PLAYER_W / 2 <= tp.x + tp.w) break;
-        }
-        if (y > tp.y + 400) break;
+      if (step.targetPlatform) {
+        const tp = step.targetPlatform;
+        const pLeft  = vxDir > 0 ? x - PLAYER_W : vxDir < 0 ? x : x - PLAYER_W / 2;
+        const pRight = vxDir > 0 ? x : vxDir < 0 ? x + PLAYER_W : x + PLAYER_W / 2;
+        if (pRight >= tp.x && pLeft <= tp.x + tp.w &&
+            y >= tp.y && (y - PLAYER_H) <= tp.y + tp.h) break;
       }
+      if (y > t.y + 600) break;
     }
     return pts;
   }

@@ -126,45 +126,6 @@ test('combined_check_rejects_step_unreachable_in_single_jump', () => {
 });
 
 
-// --- wall-touch step ---
-
-test('wall_touch_step_clearable_when_within_reach', () => {
-  const stage = {
-    id: 99, name: 'wt', spawn: { x: 0, y: 0 },
-    route: [{ label: 'wall', type: 'wall-touch', horizontalGap: 100 }],
-    solids: [], goal: null,
-  };
-  assert.equal(validateStage(stage, DEFAULTS).clearable, true);
-});
-
-test('wall_touch_step_fails_when_unreachable', () => {
-  const stage = {
-    id: 99, name: 'wt', spawn: { x: 0, y: 0 },
-    route: [{ label: 'wall', type: 'wall-touch', horizontalGap: 99999 }],
-    solids: [], goal: null,
-  };
-  const result = validateStage(stage, DEFAULTS);
-  assert.equal(result.clearable, false);
-  assert.equal(result.issues[0].type, 'too_far');
-});
-
-
-// --- wall-jump-land step ---
-
-test('wall_jump_land_lands_on_nearby_target', () => {
-  const stage = {
-    id: 99, name: 'wjl', spawn: { x: 0, y: 0 },
-    route: [{
-      label: 'wj',
-      type: 'wall-jump-land',
-      wallX: 940, wallTouchY: 300, wallSide: 1,
-      targetPlatform: { x: 700, y: 320, w: 100 },
-    }],
-    solids: [], goal: null,
-  };
-  assert.equal(validateStage(stage, DEFAULTS).clearable, true);
-});
-
 // --- jump step: bbox-overlap also counts side-face contact as reachable ---
 
 test('jump_succeeds_via_side_face_contact', () => {
@@ -200,16 +161,3 @@ test('jump_fails_when_target_too_high_for_bbox_overlap', () => {
 });
 
 
-test('wall_jump_land_fails_when_target_out_of_range', () => {
-  const stage = {
-    id: 99, name: 'wjl', spawn: { x: 0, y: 0 },
-    route: [{
-      label: 'wj',
-      type: 'wall-jump-land',
-      wallX: 940, wallTouchY: 300, wallSide: 1,
-      targetPlatform: { x: 100, y: 100, w: 50 }, // too far + too high
-    }],
-    solids: [], goal: null,
-  };
-  assert.equal(validateStage(stage, DEFAULTS).clearable, false);
-});

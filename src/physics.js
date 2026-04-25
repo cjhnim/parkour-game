@@ -5,26 +5,10 @@
 
 import { DEFAULTS } from './tuning.js';
 
-// Re-export default values as named constants so tests can import them directly.
-export const GRAVITY            = DEFAULTS.gravity;
-export const MAX_FALL_SPEED     = DEFAULTS.maxFallSpeed;
-export const WALL_SLIDE_MAX_FALL = DEFAULTS.wallSlideMaxFall;
-export const MOVE_SPEED         = DEFAULTS.moveSpeed;
-export const JUMP_VELOCITY      = DEFAULTS.jumpVelocity;
-export const WALL_JUMP_VX       = DEFAULTS.wallJumpVx;
-export const WALL_JUMP_VY       = DEFAULTS.wallJumpVy;
-
 export function applyGravity(vy, slidingOnWall = false, cfg = DEFAULTS) {
   const next = vy + cfg.gravity;
   const cap = slidingOnWall ? cfg.wallSlideMaxFall : cfg.maxFallSpeed;
   return next > cap ? cap : next;
-}
-
-export function computeVx(input, cfg = DEFAULTS) {
-  let vx = 0;
-  if (input.left) vx -= cfg.moveSpeed;
-  if (input.right) vx += cfg.moveSpeed;
-  return vx;
 }
 
 export function tryJump(vy, grounded, cfg = DEFAULTS) {
@@ -49,8 +33,4 @@ export function accelerateVx(currentVx, input, cfg = DEFAULTS) {
   }
 
   return Math.max(-cfg.moveSpeed, Math.min(cfg.moveSpeed, vx));
-}
-
-export function step(pos, vel) {
-  return { x: pos.x + vel.vx, y: pos.y + vel.vy };
 }

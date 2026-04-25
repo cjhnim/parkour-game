@@ -41,12 +41,6 @@ export function computeMaxHorizontalReach(cfg) {
   return computeAirtime(cfg) * cfg.moveSpeed;
 }
 
-function advance(state, cfg) {
-  state.vy = Math.min(state.vy + cfg.gravity, cfg.maxFallSpeed);
-  state.x += state.vx;
-  state.y += state.vy;
-}
-
 // Player jumps from `takeoff` and must make any contact with `targetPlatform`'s
 // bbox during the trajectory. Counts both top-landing and side wall-cling as
 // reachable, since wall-cling + wall-jump can convert side contact into a top
@@ -100,49 +94,6 @@ function canReachTarget(cfg, step) {
   return { ok: false, type: 'too_far', required, available };
 }
 
-// Player jumps and must reach a wall at x = horizontalGap. Vertical position
-// doesn't matter (wall is full-height).
-function canReachWall(cfg, horizontalGap) {
-  const state = { x: 0, y: 0, vx: cfg.moveSpeed, vy: cfg.jumpVelocity };
-  let maxX = 0;
-  for (let f = 0; f < 1000; f++) {
-    advance(state, cfg);
-    if (state.x > maxX) maxX = state.x;
-    if (state.x >= horizontalGap) return { ok: true };
-    if (state.y > 400) break;
-  }
-  return { ok: false, type: 'too_far', required: horizontalGap, available: maxX };
-}
-
-// Player wall-jumps from (wallX, wallTouchY) and must land on top of targetPlatform.
-//   wallSide: +1 = right wall (jump goes left), -1 = left wall (jump goes right)
-//   wallTouchY: feet y at wall-jump takeoff
-//   targetPlatform: { x, y, w } where y is platform top
-function canWallJumpLand(cfg, step) {
-  const { wallX, wallTouchY, wallSide, targetPlatform } = step;
-  const state = {
-    x: wallX - wallSide * (PLAYER_W / 2),
-    y: wallTouchY,
-    vx: -wallSide * cfg.wallJumpVx,
-    vy: cfg.wallJumpVy,
-  };
-  const platLeft  = targetPlatform.x;
-  const platRight = targetPlatform.x + targetPlatform.w;
-  const platTop   = targetPlatform.y;
-
-  for (let f = 0; f < 1000; f++) {
-    const prevY = state.y;
-    advance(state, cfg);
-    if (state.vy > 0 && prevY < platTop && state.y >= platTop) {
-      if (state.x + PLAYER_W / 2 >= platLeft && state.x - PLAYER_W / 2 <= platRight) {
-        return { ok: true };
-      }
-    }
-    if (state.y > platTop + 600) break;
-  }
-  return { ok: false, type: 'unreachable', required: 0, available: 0 };
-}
-
 // Validate a stage. Returns { clearable, issues, capabilities }.
 // Stages without a route are tutorials and trivially clearable.
 export function validateStage(stage, cfg) {
@@ -156,17 +107,7 @@ export function validateStage(stage, cfg) {
 
   const issues = [];
   for (const step of stage.route) {
-    const type = step.type ?? 'jump';
-    let r;
-    if (type === 'jump') {
-      r = canReachTarget(cfg, step);
-    } else if (type === 'wall-touch') {
-      r = canReachWall(cfg, step.horizontalGap);
-    } else if (type === 'wall-jump-land') {
-      r = canWallJumpLand(cfg, step);
-    } else {
-      r = { ok: true };
-    }
+    const r = canReachTarget(cfg, step);
     if (!r.ok) {
       issues.push({ step, type: r.type, required: r.required, available: r.available });
     }

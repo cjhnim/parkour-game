@@ -12,8 +12,6 @@ const SLIDERS = [
   { key: 'moveAccel',         label: 'Move Accel',          min: 0.1, max: 3.0,  step: 0.1  },
   { key: 'moveFriction',      label: 'Move Friction',       min: 0.1, max: 1.0,  step: 0.05 },
   { key: 'jumpVelocity',      label: 'Jump Height',         min: -20, max: -4,   step: 0.5  },
-  { key: 'jumpHoldForce',     label: 'Jump Hold Force',     min: 0.1, max: 3.0,  step: 0.1  },
-  { key: 'jumpHoldMaxFrames', label: 'Jump Hold Frames',    min: 1,   max: 30,   step: 1    },
   { key: 'wallJumpVx',        label: 'Wall Jump H-Kick',    min: 1,   max: 15,   step: 0.5  },
   { key: 'wallJumpVy',        label: 'Wall Jump V-Kick',    min: -20, max: -4,   step: 0.5  },
 ];

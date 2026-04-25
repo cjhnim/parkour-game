@@ -6,6 +6,12 @@
 
 ## 버전
 
+**v0.10** — 코드 정리
+- `panel.js`: 동작 안 하던 슬라이더 2개(`jumpHoldForce`·`jumpHoldMaxFrames`) 제거. 가변 점프 제거 후 남은 흔적
+- `physics.js`: 미사용 함수(`computeVx`·`step`) 및 DEFAULTS 미러 상수 7개 제거. 테스트도 `DEFAULTS` 직접 참조로 변경
+- `validator.js`: 어떤 스테이지도 사용하지 않던 `wall-touch`·`wall-jump-land` step type 제거 (`canReachWall`·`canWallJumpLand`·`advance` 함수 삭제). render의 시뮬레이션 분기도 정리
+- 테스트 62 → 53개, 전부 통과
+
 **v0.9** — 스테이지 추가: 기술별 커리큘럼 4종 (Stairs / Climb / Long Gap / Drop). 기존 Climb는 Stage 1 → Stage 2로 이동.
 
 **v0.8** — 검증기 모델을 bbox-overlap으로 통합 + 경로 시각화
@@ -157,20 +163,24 @@
 
 | 파일 | 테스트 수 | 상태 |
 |---|---|---|
-| `test/physics.test.js` | 17 | ✅ 전부 통과 |
+| `test/physics.test.js` | 12 | ✅ 전부 통과 |
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 13 | ✅ 전부 통과 |
-| `test/validator.test.js` | 23 | ✅ 전부 통과 |
-| **합계** | **62** | **✅** |
+| `test/validator.test.js` | 19 | ✅ 전부 통과 |
+| **합계** | **53** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 
 ---
 
-## v0.3 후보
+## 향후 작업 후보
 
+### 게임 디자인
 - 더블 점프
 - 대시 (공중 수평 이동)
-- 베스트 타임 저장 (`localStorage`)
-- 스테이지 추가 (낙사 구간 포함 — 낙사 로직 검증 겸)
 - 콤보/트릭 점수 시스템
+
+### QoL (Quality of Life)
+- **베스트 타임 저장** — `localStorage`로 스테이지별 최단 시간 기록·표시
+- **스테이지 셀렉트 메뉴** — 클리어 후 다른 스테이지로 돌아갈 수단. 현재는 R(재시작)만 가능. 마지막 스테이지 클리어 후 진입 메뉴 부재
+- **Coyote time / Jump buffer** — 플랫폼 끝에서 살짝 늦게 점프하거나, 착지 직전 점프 키를 살짝 일찍 눌러도 받아주는 grace frame. 플랫포머 표준 QoL
