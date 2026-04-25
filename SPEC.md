@@ -6,6 +6,8 @@
 
 ## 버전
 
+**v0.9** — 스테이지 추가: 기술별 커리큘럼 4종 (Stairs / Climb / Long Gap / Drop). 기존 Climb는 Stage 1 → Stage 2로 이동.
+
 **v0.8** — 검증기 모델을 bbox-overlap으로 통합 + 경로 시각화
 - 모든 route step을 `targetPlatform: {x, y, w, h}`로 통일 (verticalGap·horizontalGap 제거)
 - validator는 trajectory 중 player bbox와 target bbox가 겹치는지 검사 — top landing이든 side wall-cling이든 통과로 판정 (벽 메카닉으로 측면→상단 전환이 가능하므로)
@@ -67,7 +69,7 @@
 ### 낙사 조건
 
 - 플레이어 y좌표가 화면 높이(640)를 초과하면 스폰 위치로 리스폰
-- ⚠️ **미검증** — 현재 모든 스테이지에 전체 너비 바닥이 있어 낙사가 불가능한 구조. 로직은 구현되어 있으나 실제 동작 미확인.
+- Stage 3 (pit)·Stage 4 (no floor)에서 실제로 발동
 
 ---
 
@@ -88,17 +90,34 @@
 - 골 없음 (`goal: null`) — 자유롭게 조작 테스트
 - SPACE로 Stage 1 진입
 
-### Stage 1 — Climb
+### Stage 1 — Stairs (점프만)
+
+- 단순 계단형 플랫폼 3개. 단일 점프로 모두 도달 가능
+- 벽 메카닉·이동 가속 등 별도 기술 불필요
+- 첫 스테이지로 점프 감각만 익히게 함
+
+### Stage 2 — Drop (하강)
+
+- 천장 부근(y=160)에서 스폰, 4개 플랫폼을 아래로 zigzag로 내려감 (Top → P1 → P2 → P3)
+- 바닥 floor 없음 — 잘못 떨어지면 OOB → 리스폰 (낙사 로직 검증 겸)
+- Goal: P3 우측면, 오른쪽 벽 직전. P3 위로 걸어가야 도달
+
+### Stage 3 — Long Gap (이동 중 점프)
+
+- 좌·우 두 개의 floor 사이에 190px 폭의 함정 (pit). 이론상 max ≈ 200px라 마진 매우 좁음
+- 정지 점프로는 거리 부족 — 좌측 floor에서 가속한 뒤 우측 끝에서 정확히 점프해야 우측 floor 착지
+- pit으로 떨어지면 OOB → 리스폰
+
+### Stage 4 — Climb (벽 점프 필수)
 
 - 화면 하단 왼쪽에서 스폰, 화면 상단 오른쪽의 골 지점 도달 시 클리어
 - 지그재그 플랫폼 6개 배치 (아래 → 위)
-- 골 지점: 황색 사각형 (`#f5d76e`), 40 × 40px
 
 **정규 루트**: Floor → P1 → P2 → P3 → P4 → Goal (벽 이용)
-- P4 위에서 오른쪽으로 달리다 점프 → Goal 플랫폼 왼쪽 벽에 부딪힘 → 상승 모멘텀으로 벽 위로 넘어감
-- P4→Goal은 직접 점프 불가 (높이 130px > 최대 114px) — 벽 메카닉 필수
+- P4 왼쪽 끝에서 풀스피드 점프 → Goal 플랫폼 좌측면에 bbox 충돌 → 벽점프로 상단 착지
+- P4→Goal은 직접 상단 착지 불가 (높이 130px > 최대 114px) — 측면 클링 + 벽점프 필수
 
-**함정**: P5는 올라갈 수 있지만 Goal에 도달 불가 (수평 거리 + 천장 제약)
+**함정**: P5는 올라갈 수 있지만 Goal에 도달 불가
 
 ---
 
@@ -141,8 +160,8 @@
 | `test/physics.test.js` | 17 | ✅ 전부 통과 |
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 13 | ✅ 전부 통과 |
-| `test/validator.test.js` | 20 | ✅ 전부 통과 |
-| **합계** | **59** | **✅** |
+| `test/validator.test.js` | 23 | ✅ 전부 통과 |
+| **합계** | **62** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 

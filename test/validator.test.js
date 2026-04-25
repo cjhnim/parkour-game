@@ -53,6 +53,21 @@ test('stage1_is_clearable_with_default_config', () => {
   assert.equal(result.issues.length, 0);
 });
 
+test('stage2_drop_is_clearable_with_default_config', () => {
+  const result = validateStage(getStage(2), DEFAULTS);
+  assert.equal(result.clearable, true);
+});
+
+test('stage3_long_gap_is_clearable_with_default_config', () => {
+  const result = validateStage(getStage(3), DEFAULTS);
+  assert.equal(result.clearable, true);
+});
+
+test('stage4_climb_is_clearable_with_default_config', () => {
+  const result = validateStage(getStage(4), DEFAULTS);
+  assert.equal(result.clearable, true);
+});
+
 test('stage1_not_clearable_when_gravity_is_extreme', () => {
   const result = validateStage(getStage(1), { ...DEFAULTS, gravity: 2.0 });
   assert.equal(result.clearable, false);

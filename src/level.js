@@ -10,63 +10,135 @@ export const PLAYER_H = 24;
 
 const wall = (x, y, w, h) => ({ x, y, w, h });
 
-// Stage 0: Tutorial. Empty room with floor and side walls only.
+// Standard arena outline (floor + side walls + ceiling).
+const arena = (...extras) => [
+  wall(0, SCREEN_H - 40, SCREEN_W, 40),
+  wall(0, 0, 20, SCREEN_H),
+  wall(SCREEN_W - 20, 0, 20, SCREEN_H),
+  wall(0, 0, SCREEN_W, 20),
+  ...extras,
+];
+
+
+// === Stage 0: Tutorial ===
 const stage0 = {
   id: 0,
   name: 'Tutorial — Move freely',
   spawn: { x: SCREEN_W / 2 - PLAYER_W / 2, y: SCREEN_H - 80 - PLAYER_H },
-  solids: [
-    wall(0, SCREEN_H - 40, SCREEN_W, 40),     // floor
-    wall(0, 0, 20, SCREEN_H),                  // left wall
-    wall(SCREEN_W - 20, 0, 20, SCREEN_H),     // right wall
-    wall(0, 0, SCREEN_W, 20),                  // ceiling
-  ],
-  // No goal in tutorial — player explores freely. Use null to indicate no clear condition.
+  solids: arena(),
   goal: null,
 };
 
-// Stage 1: Climbing course. Start bottom-left, reach top-right.
-// Platform constants reused by both solids and route's targetPlatform.
-const P1       = wall(150, SCREEN_H - 130, 140, 16);
-const P2       = wall(380, SCREEN_H - 220, 140, 16);
-const P3       = wall(180, SCREEN_H - 310, 140, 16);
-const P4       = wall(450, SCREEN_H - 400, 140, 16);
-const P5_TRAP  = wall(220, SCREEN_H - 490, 140, 16);
-const GOAL_PLAT = wall(560, SCREEN_H - 530, 200, 16);
 
+// === Stage 1: Stairs (jump only) ===
+// Simple staircase. Each step within single-jump capability — no walls needed.
+const S1_P1 = wall(180, 510, 120, 16);
+const S1_P2 = wall(400, 420, 120, 16);
+const S1_P3 = wall(620, 330, 120, 16);
 const stage1 = {
   id: 1,
-  name: 'Stage 1 — Climb',
-  spawn: { x: 60, y: SCREEN_H - 80 - PLAYER_H },
-  // Route: ordered steps the player must complete to clear the stage.
-  // Each step's takeoff point and target platform are explicit. Validator checks
-  // whether the player's bbox can overlap the target's bbox during the trajectory —
-  // this counts both top landing AND side wall-cling as success, matching what's
-  // actually achievable in-game with wall-jump mechanics.
-  // P5는 함정: 올라갈 수 있지만 Goal에 도달 불가.
+  name: 'Stage 1 — Stairs',
+  spawn: { x: 60, y: SCREEN_H - 40 - PLAYER_H },
   route: [
     { label: 'Floor → P1', type: 'jump',
-      takeoff: { x: 100, y: SCREEN_H - 40, vxDir: 1 }, targetPlatform: P1 },
+      takeoff: { x: 150, y: SCREEN_H - 40, vxDir: 1 }, targetPlatform: S1_P1 },
     { label: 'P1 → P2', type: 'jump',
-      takeoff: { x: 290, y: SCREEN_H - 130, vxDir: 1 }, targetPlatform: P2 },
+      takeoff: { x: 300, y: 510, vxDir: 1 }, targetPlatform: S1_P2 },
     { label: 'P2 → P3', type: 'jump',
-      takeoff: { x: 380, y: SCREEN_H - 220, vxDir: -1 }, targetPlatform: P3 },
-    { label: 'P3 → P4', type: 'jump',
-      takeoff: { x: 320, y: SCREEN_H - 310, vxDir: 1 }, targetPlatform: P4 },
-    { label: 'P4 → Goal', type: 'jump',
-      takeoff: { x: 482, y: SCREEN_H - 400, vxDir: 1 }, targetPlatform: GOAL_PLAT },
+      takeoff: { x: 520, y: 420, vxDir: 1 }, targetPlatform: S1_P3 },
+  ],
+  solids: arena(S1_P1, S1_P2, S1_P3),
+  goal: { x: 660, y: 290, w: 40, h: 40 },
+};
+
+
+// === Stage 2: Drop (descent) ===
+// No bottom floor — falling off any platform = OOB respawn. Player must land
+// precisely on each platform on the way down. Layout placed so P1→P3 direct
+// fall (skipping P2) and P2→Goal direct trajectory both miss the target.
+// Top platform sits ~140px below ceiling so jump arcs don't graze it.
+const S2_TOP = wall(50,  160, 100, 16);
+const S2_P1  = wall(300, 280, 100, 16);
+const S2_P2  = wall(550, 400, 100, 16);
+const S2_P3  = wall(800, 520, 100, 16);
+const stage2 = {
+  id: 2,
+  name: 'Stage 2 — Drop',
+  spawn: { x: 60, y: 160 - PLAYER_H },
+  route: [
+    { label: 'Top → P1', type: 'jump',
+      takeoff: { x: 150, y: 160, vxDir: 1 }, targetPlatform: S2_P1 },
+    { label: 'P1 → P2', type: 'jump',
+      takeoff: { x: 400, y: 280, vxDir: 1 }, targetPlatform: S2_P2 },
+    { label: 'P2 → P3', type: 'jump',
+      takeoff: { x: 650, y: 400, vxDir: 1 }, targetPlatform: S2_P3 },
   ],
   solids: [
-    wall(0, SCREEN_H - 40, SCREEN_W, 40),     // floor
-    wall(0, 0, 20, SCREEN_H),                  // left wall
-    wall(SCREEN_W - 20, 0, 20, SCREEN_H),     // right wall
-    wall(0, 0, SCREEN_W, 20),                  // ceiling
-    P1, P2, P3, P4, P5_TRAP, GOAL_PLAT,
+    wall(0, 0, 20, SCREEN_H),
+    wall(SCREEN_W - 20, 0, 20, SCREEN_H),
+    wall(0, 0, SCREEN_W, 20),
+    S2_TOP, S2_P1, S2_P2, S2_P3,
   ],
+  // Goal sits between P3's right edge and the right wall — only reachable by
+  // walking on P3 (mid-air trajectories from upper platforms pass below it).
+  goal: { x: 890, y: 480, w: 40, h: 40 },
+};
+
+
+// === Stage 3: Long Gap (moving jump required) ===
+// Wide pit (190px) between two floor segments. Tight margin — player must
+// reach full move speed before jumping from the very edge of the left floor.
+const S3_LEFT_FLOOR  = wall(0,   SCREEN_H - 40, 400, 40);
+const S3_RIGHT_FLOOR = wall(590, SCREEN_H - 40, 370, 40);
+const stage3 = {
+  id: 3,
+  name: 'Stage 3 — Long Gap',
+  spawn: { x: 60, y: SCREEN_H - 40 - PLAYER_H },
+  route: [
+    { label: 'Run-up over pit', type: 'jump',
+      takeoff: { x: 400, y: SCREEN_H - 40, vxDir: 1 }, targetPlatform: S3_RIGHT_FLOOR },
+  ],
+  solids: [
+    S3_LEFT_FLOOR, S3_RIGHT_FLOOR,
+    wall(0, 0, 20, SCREEN_H),
+    wall(SCREEN_W - 20, 0, 20, SCREEN_H),
+    wall(0, 0, SCREEN_W, 20),
+  ],
+  goal: { x: 800, y: SCREEN_H - 80, w: 40, h: 40 },
+};
+
+
+// === Stage 4: Climb (wall-jump required) ===
+// P4 → Goal forces side wall-cling: peak height ≈ 114 < 130 vGap to Goal.
+// P5 is a trap — climbable but Goal unreachable from there.
+const S4_P1       = wall(150, SCREEN_H - 130, 140, 16);
+const S4_P2       = wall(380, SCREEN_H - 220, 140, 16);
+const S4_P3       = wall(180, SCREEN_H - 310, 140, 16);
+const S4_P4       = wall(450, SCREEN_H - 400, 140, 16);
+const S4_P5_TRAP  = wall(220, SCREEN_H - 490, 140, 16);
+const S4_GOAL_PLAT = wall(560, SCREEN_H - 530, 200, 16);
+const stage4 = {
+  id: 4,
+  name: 'Stage 4 — Climb',
+  spawn: { x: 60, y: SCREEN_H - 80 - PLAYER_H },
+  route: [
+    { label: 'Floor → P1', type: 'jump',
+      takeoff: { x: 100, y: SCREEN_H - 40, vxDir: 1 }, targetPlatform: S4_P1 },
+    { label: 'P1 → P2', type: 'jump',
+      takeoff: { x: 290, y: SCREEN_H - 130, vxDir: 1 }, targetPlatform: S4_P2 },
+    { label: 'P2 → P3', type: 'jump',
+      takeoff: { x: 380, y: SCREEN_H - 220, vxDir: -1 }, targetPlatform: S4_P3 },
+    { label: 'P3 → P4', type: 'jump',
+      takeoff: { x: 320, y: SCREEN_H - 310, vxDir: 1 }, targetPlatform: S4_P4 },
+    { label: 'P4 → Goal', type: 'jump',
+      takeoff: { x: 482, y: SCREEN_H - 400, vxDir: 1 }, targetPlatform: S4_GOAL_PLAT },
+  ],
+  solids: arena(S4_P1, S4_P2, S4_P3, S4_P4, S4_P5_TRAP, S4_GOAL_PLAT),
   goal: { x: 700, y: SCREEN_H - 570, w: 40, h: 40 },
 };
 
-export const STAGES = [stage0, stage1];
+
+export const STAGES = [stage0, stage1, stage2, stage3, stage4];
 
 export function getStage(id) {
   return STAGES.find((s) => s.id === id) ?? STAGES[0];
