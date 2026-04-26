@@ -7,7 +7,7 @@
 ## 버전
 
 **v0.12** — 패턴 라이브러리 도입(Phase 1) + 튜닝 패널 슬림화
-- `src/patterns.js` 신규 — `dropStep(ox, oy, dir)`·`longGap`·`wallClimb` + `PATTERN_REGISTRY`. 각 함수는 translation-invariant하게 `{ platforms, route, bbox }` 반환. `dropStep`은 atomic 단위(한 칸 하강)로, 좌·우 방향 선택 가능 + 여러 번 호출해 계단 합성
+- `src/patterns.js` 신규 — `dropStep(ox, oy, dir, opts)`·`longGap`·`wallClimb` + `PATTERN_REGISTRY`. 각 함수는 translation-invariant하게 `{ platforms, route, bbox }` 반환. `dropStep`은 atomic 단위(한 칸 점프)로, 좌·우 방향 + `opts.dx`·`dy`·`targetW`·`targetH`로 타깃 위치·크기 자유 지정. dy<0면 위로 점프(점프 높이 한도 ≈114px). 여러 번 호출해 계단/오르기 합성
 - Stage 2·3·4를 패턴 호출로 재작성 (좌표 동일, 회귀 없음)
 - `test/patterns.test.js` 추가 — 임의 offset에서 validator 통과 확인 (translation invariance)
 - 그리드 컨벤션: `(ox, oy)`는 16의 배수 권장 (강제 X)
@@ -178,8 +178,8 @@
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 13 | ✅ 전부 통과 |
 | `test/validator.test.js` | 19 | ✅ 전부 통과 |
-| `test/patterns.test.js` | 32 | ✅ 전부 통과 |
-| **합계** | **85** | **✅** |
+| `test/patterns.test.js` | 38 | ✅ 전부 통과 |
+| **합계** | **91** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 

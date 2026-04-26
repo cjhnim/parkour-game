@@ -130,6 +130,58 @@ test('chained_dropSteps_clearable_as_a_sequence', () => {
   assert.equal(validateStage(stage, DEFAULTS).clearable, true);
 });
 
+// --- dropStep parameterization ---
+
+test('dropStep_default_dx_dy_matches_legacy_geometry', () => {
+  const p = dropStep(150, 160, 1);
+  assert.equal(p.platforms[0].x, 300);
+  assert.equal(p.platforms[0].y, 280);
+});
+
+// NOTE: Very short jumps (small dx + small dy) are gameplay-feasible by
+// releasing input mid-air, but the validator only checks max-vx trajectories.
+// So short jumps may be rejected by validator even though playable. Tests
+// below stick to validator-clearable cases.
+
+test('dropStep_long_drop_clearable', () => {
+  // Big drop: large dy gives more airtime, so larger dx is reachable.
+  const p = dropStep(100, 100, 1, { dx: 300, dy: 400 });
+  const r = validateStage(stageFromPattern(p), DEFAULTS);
+  assert.equal(r.clearable, true, JSON.stringify(r.issues));
+});
+
+test('dropStep_too_far_at_zero_dy_rejected_by_validator', () => {
+  // dx = 250 with dy=0 — exceeds maxHorizontalReach (~185). Player falls
+  // off before reaching target.
+  const p = dropStep(100, 300, 1, { dx: 250, dy: 0 });
+  const r = validateStage(stageFromPattern(p), DEFAULTS);
+  assert.equal(r.clearable, false);
+});
+
+test('dropStep_jump_up_clearable_within_max_jump_height', () => {
+  // Negative dy = jump up. ~80px rise is comfortably under maxJumpHeight 114.
+  const p = dropStep(100, 400, 1, { dx: 80, dy: -80 });
+  const r = validateStage(stageFromPattern(p), DEFAULTS);
+  assert.equal(r.clearable, true, JSON.stringify(r.issues));
+});
+
+test('dropStep_jump_up_too_high_rejected', () => {
+  // dy beyond maxJumpHeight + PLAYER_H (≈138 at default physics) — bbox top
+  // at peak still doesn't reach target's bottom edge.
+  const p = dropStep(100, 400, 1, { dx: 50, dy: -200 });
+  const r = validateStage(stageFromPattern(p), DEFAULTS);
+  assert.equal(r.clearable, false);
+});
+
+test('dropStep_left_with_custom_dx_dy', () => {
+  const p = dropStep(800, 200, -1, { dx: 100, dy: 80 });
+  const t = p.platforms[0];
+  assert.equal(t.x + t.w, 700, 'target right edge = ox - dx');
+  assert.equal(t.y, 280);
+  const r = validateStage(stageFromPattern(p), DEFAULTS);
+  assert.equal(r.clearable, true);
+});
+
 // --- coordinate shift invariants ---
 
 test('wallClimb_route_takeoff_shifts_by_offset', () => {

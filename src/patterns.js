@@ -10,28 +10,40 @@ import { SCREEN_H } from './level.js';
 
 const w = (x, y, ww, hh) => ({ x, y, w: ww, h: hh });
 
-// Drop step (atomic). One descending jump from takeoff to a target platform.
-// (ox, oy) = takeoff point: leading edge x and feet y on the source platform.
-// dir = +1 (drop to the right) or -1 (drop to the left).
-// Geometry hard-coded from Stage 2's validated values: 150px forward to target's
-// near edge, 120px vertical drop, 100×16 target. Compose multiple calls to build
-// staircases of any length and direction.
-export function dropStep(ox = 0, oy = 0, dir = 1) {
-  const targetW = 100, targetH = 16;
-  const dxToNearEdge = 150;
-  const dy = 120;
-  const target = dir >= 0
-    ? w(ox + dxToNearEdge, oy + dy, targetW, targetH)
-    : w(ox - dxToNearEdge - targetW, oy + dy, targetW, targetH);
+// Drop step (atomic). One jump from takeoff to a target platform.
+//   (ox, oy)  takeoff point: leading edge x, feet y on source platform
+//   dir       +1 (jump right) or -1 (jump left)
+//   opts.dx   horizontal distance from takeoff to target's near edge
+//             (in dir direction). Default 150. Bounded above by
+//             ~maxHorizontalReach (≈185 at default physics) for dy=0;
+//             larger dy allows larger dx.
+//   opts.dy   vertical drop from takeoff to target top. Default 120.
+//             Negative = jump up (target above takeoff). Bounded below by
+//             ~maxJumpHeight − targetH (≈98 at default physics).
+//   opts.targetW / opts.targetH   target platform size. Default 100×16.
+//
+// Validity is verified by validateStage at runtime — caller should test new
+// (dx, dy) combinations or trust the documented bounds. Compose multiple
+// calls to build staircases / climbs of any length and direction.
+export function dropStep(ox = 0, oy = 0, dir = 1, opts = {}) {
+  const { dx = 150, dy = 120, targetW = 100, targetH = 16 } = opts;
+  const sign = dir >= 0 ? 1 : -1;
+  const target = sign > 0
+    ? w(ox + dx, oy + dy, targetW, targetH)
+    : w(ox - dx - targetW, oy + dy, targetW, targetH);
+  const dirLabel = sign > 0 ? '→' : '←';
   return {
     platforms: [target],
     route: [
-      { label: `drop step ${dir > 0 ? '→' : '←'}`, type: 'jump',
-        takeoff: { x: ox, y: oy, vxDir: dir >= 0 ? 1 : -1 }, targetPlatform: target },
+      { label: `drop step ${dirLabel}`, type: 'jump',
+        takeoff: { x: ox, y: oy, vxDir: sign }, targetPlatform: target },
     ],
-    bbox: dir >= 0
-      ? { x: ox,        y: oy, w: dxToNearEdge + targetW, h: dy + targetH }
-      : { x: target.x,  y: oy, w: dxToNearEdge + targetW, h: dy + targetH },
+    bbox: {
+      x: sign > 0 ? ox : target.x,
+      y: Math.min(oy, target.y),
+      w: dx + targetW,
+      h: Math.abs(dy) + targetH,
+    },
   };
 }
 
