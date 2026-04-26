@@ -68,6 +68,11 @@ test('stage4_climb_is_clearable_with_default_config', () => {
   assert.equal(result.clearable, true);
 });
 
+test('stage5_zigzag_drop_is_clearable_with_default_config', () => {
+  const result = validateStage(getStage(5), DEFAULTS);
+  assert.equal(result.clearable, true, JSON.stringify(result.issues));
+});
+
 test('stage1_not_clearable_when_gravity_is_extreme', () => {
   const result = validateStage(getStage(1), { ...DEFAULTS, gravity: 2.0 });
   assert.equal(result.clearable, false);

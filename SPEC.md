@@ -6,6 +6,12 @@
 
 ## 버전
 
+**v0.13** — Stage 5 추가 + 디버그 시각화 보강
+- Stage 5 (Zigzag Drop) 추가 — 진짜 좌·우 교차 zigzag. `dropStep` 4번 호출, **비대칭 dx**(우=210, 좌=100)로 매 단계 ~10px 우측 drift → column 정렬 방지(직접 낙하로 다음 same-side 플랫폼 스킵 막음). 바닥 없음 → 잘못 떨어지면 OOB 리스폰
+- `render.js > drawPlatformNumbers` — 튜닝 패널 켜졌을 때 route 순서대로 각 플랫폼 위에 번호(0=시작, 1=첫 점프 타깃, ...) 동그라미 표시. trajectory와 함께 디자인 검토용
+- `validator.test.js`에 stage5 클리어 가능성 케이스 추가 (92개)
+- 디자인 함정 기록: validator가 통과해도 게임플레이 결함은 가능 (예: 바닥에서 골 도달, 같은 column 스킵). 플레이 테스트 필수
+
 **v0.12** — 패턴 라이브러리 도입(Phase 1) + 튜닝 패널 슬림화
 - `src/patterns.js` 신규 — `dropStep(ox, oy, dir, opts)`·`longGap`·`wallClimb` + `PATTERN_REGISTRY`. 각 함수는 translation-invariant하게 `{ platforms, route, bbox }` 반환. `dropStep`은 atomic 단위(한 칸 점프)로, 좌·우 방향 + `opts.dx`·`dy`·`targetW`·`targetH`로 타깃 위치·크기 자유 지정. dy<0면 위로 점프(점프 높이 한도 ≈114px). 여러 번 호출해 계단/오르기 합성
 - Stage 2·3·4를 패턴 호출로 재작성 (좌표 동일, 회귀 없음)
@@ -136,6 +142,13 @@
 
 **함정**: P5는 올라갈 수 있지만 Goal에 도달 불가
 
+### Stage 5 — Zigzag Drop (좌·우 교차 하강)
+
+- 화면 상단 좌측에서 스폰, 좌·우 교차하며 4번 점프해 하단으로 내려감
+- `dropStep` 4번 호출(우→좌→우→좌). **비대칭 dx**(우=210, 좌=100)로 매 단계 ~10px 우측 drift → 같은 column에 다음 same-side 플랫폼이 오지 않게 함. 직접 낙하로 스킵 불가
+- 바닥 floor 없음 — 잘못 떨어지면 OOB → 리스폰
+- Goal: P4 위 (좌측 하단)
+
 ---
 
 ## UI
@@ -166,7 +179,9 @@
 
 **용도**: (1) `test/patterns.test.js`에서 패턴이 임의 offset에서 클리어 가능한지 검증, (2) `render.js > drawRoute`에서 점프 trajectory 시각화. 튜닝 패널의 실시간 텍스트 판독은 v0.12에서 제거 (패턴 사전 검증으로 불필요해짐).
 
-**경로 시각화 (`src/render.js > drawRoute`)**: 패널이 열려 있을 때 각 step의 시뮬레이션 trajectory를 점선으로 그리고, 종료 지점에 player bbox(32×24)를 박스로 표시한다.
+**경로 시각화 (`src/render.js > drawRoute`)**: 패널이 열려 있을 때 각 step의 시뮬레이션 trajectory를 점선으로 그리고, 종료 지점에 player bbox(32×24)를 박스로 표시한다. validator와 동일한 vx(=`vxDir × moveSpeed`)로 시뮬레이션해 실제 클리어 가능 trajectory와 일치.
+
+**플랫폼 번호 (`src/render.js > drawPlatformNumbers`)**: 패널이 열려 있을 때 각 플랫폼 위에 route 순서 번호(0=시작 플랫폼, 1=첫 점프 타깃, ...)를 동그라미로 표시. 디자인 검토 시 흐름 파악용.
 
 ---
 
@@ -177,9 +192,9 @@
 | `test/physics.test.js` | 12 | ✅ 전부 통과 |
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 13 | ✅ 전부 통과 |
-| `test/validator.test.js` | 19 | ✅ 전부 통과 |
+| `test/validator.test.js` | 20 | ✅ 전부 통과 |
 | `test/patterns.test.js` | 38 | ✅ 전부 통과 |
-| **합계** | **91** | **✅** |
+| **합계** | **92** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 

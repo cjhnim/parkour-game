@@ -109,7 +109,35 @@ const stage4 = {
 };
 
 
-export const STAGES = [stage0, stage1, stage2, stage3, stage4];
+// === Stage 5: Zigzag Drop (alternating directions, asymmetric dx) ===
+// True zigzag (left/right alternating, unlike Stage 2's one-way descent).
+// Asymmetric dx (210 right, 100 left) makes the pattern drift slightly right
+// each cycle so no two same-direction platforms share a column — preventing
+// the "skip every other platform via straight drop" exploit. No bottom floor:
+// missing any platform = OOB respawn, forcing the player to land each step
+// precisely. Goal sits on the final platform.
+const S5_TOP = wall(50, 160, 100, 16);
+const s5a = dropStep(150, 160,  1, { dx: 210, dy: 100 }); // → P1 (360, 260)
+const s5b = dropStep(360, 260, -1, { dx: 100, dy: 100 }); // → P2 (160, 360)
+const s5c = dropStep(260, 360,  1, { dx: 210, dy: 100 }); // → P3 (470, 460)
+const s5d = dropStep(470, 460, -1, { dx: 100, dy: 100 }); // → P4 (270, 560)
+const stage5 = {
+  id: 5,
+  name: 'Stage 5 — Zigzag Drop',
+  spawn: { x: 60, y: 160 - PLAYER_H },
+  route: [...s5a.route, ...s5b.route, ...s5c.route, ...s5d.route],
+  solids: [
+    wall(0, 0, 20, SCREEN_H),
+    wall(SCREEN_W - 20, 0, 20, SCREEN_H),
+    wall(0, 0, SCREEN_W, 20),
+    S5_TOP,
+    ...s5a.platforms, ...s5b.platforms, ...s5c.platforms, ...s5d.platforms,
+  ],
+  goal: { x: 290, y: 520, w: 40, h: 40 },
+};
+
+
+export const STAGES = [stage0, stage1, stage2, stage3, stage4, stage5];
 
 export function getStage(id) {
   return STAGES.find((s) => s.id === id) ?? STAGES[0];

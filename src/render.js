@@ -134,5 +134,43 @@ export function createRenderer(canvas) {
     ctx.restore();
   }
 
-  return { clear, drawSolids, drawGoal, drawPlayer, drawHud, drawRoute };
+  // Numbers each route platform sequentially: 0 = takeoff of step 1 (spawn
+  // platform), 1 = target of step 1, 2 = target of step 2, etc.
+  // Renders a circled digit floating above each platform.
+  function drawPlatformNumbers(stage) {
+    if (!stage?.route?.length) return;
+
+    function findSolidAt(x, y) {
+      return stage.solids.find(s => s.y === y && x >= s.x && x <= s.x + s.w);
+    }
+    function platKey(p) { return `${p.x},${p.y},${p.w},${p.h}`; }
+
+    const order = new Map();
+    let n = 0;
+    for (const step of stage.route) {
+      const src = findSolidAt(step.takeoff.x, step.takeoff.y);
+      if (src && !order.has(platKey(src))) order.set(platKey(src), n++);
+      const tp = step.targetPlatform;
+      if (tp && !order.has(platKey(tp))) order.set(platKey(tp), n++);
+    }
+
+    ctx.save();
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const [key, num] of order) {
+      const [x, y, w] = key.split(',').map(Number);
+      const cx = x + w / 2;
+      const cy = y - 12;
+      ctx.fillStyle = '#5fc4ff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1a1a24';
+      ctx.fillText(String(num), cx, cy + 1);
+    }
+    ctx.restore();
+  }
+
+  return { clear, drawSolids, drawGoal, drawPlayer, drawHud, drawRoute, drawPlatformNumbers };
 }
