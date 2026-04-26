@@ -74,36 +74,135 @@ export function createRenderer(canvas) {
     }
   }
 
-  // Draw reach arcs (outer + inner) and a translucent fill of the area
-  // between them — the set of points reachable from a takeoff position.
-  // arcs: { outer: [{x,y}], inner: [{x,y}] } from editor.computeReachArcs.
-  function drawReachArcs(arcs) {
-    if (!arcs?.outer?.length || !arcs?.inner?.length) return;
+  // 16px grid dots, drawn as a faint background (editor mode only).
+  function drawGrid(grid = 16) {
     ctx.save();
-
-    // Filled region: outer forward + inner reversed → closed polygon.
-    ctx.fillStyle = 'rgba(95, 196, 255, 0.15)';
-    ctx.beginPath();
-    ctx.moveTo(arcs.outer[0].x, arcs.outer[0].y);
-    for (const p of arcs.outer) ctx.lineTo(p.x, p.y);
-    for (let i = arcs.inner.length - 1; i >= 0; i--) {
-      ctx.lineTo(arcs.inner[i].x, arcs.inner[i].y);
-    }
-    ctx.closePath();
-    ctx.fill();
-
-    // Boundary curves
-    ctx.strokeStyle = '#5fc4ff';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 4]);
-    for (const arc of [arcs.outer, arcs.inner]) {
-      ctx.beginPath();
-      ctx.moveTo(arc[0].x, arc[0].y);
-      for (const p of arc) ctx.lineTo(p.x, p.y);
-      ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    for (let y = 0; y < SCREEN_H; y += grid) {
+      for (let x = 0; x < SCREEN_W; x += grid) {
+        ctx.fillRect(x, y, 1, 1);
+      }
     }
     ctx.restore();
   }
 
-  return { clear, drawSolids, drawGoal, drawPlayer, drawHud, drawReachArcs };
+  // Cursor in editor mode: hollow yellow square + facing chevron.
+  function drawCursor(cursor, facing = 1, size = 16) {
+    ctx.save();
+    ctx.strokeStyle = '#f5d76e';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cursor.x, cursor.y, size, size);
+    // Facing chevron just outside the cursor
+    ctx.fillStyle = '#f5d76e';
+    ctx.beginPath();
+    if (facing >= 0) {
+      ctx.moveTo(cursor.x + size + 2, cursor.y);
+      ctx.lineTo(cursor.x + size + 8, cursor.y + size / 2);
+      ctx.lineTo(cursor.x + size + 2, cursor.y + size);
+    } else {
+      ctx.moveTo(cursor.x - 2, cursor.y);
+      ctx.lineTo(cursor.x - 8, cursor.y + size / 2);
+      ctx.lineTo(cursor.x - 2, cursor.y + size);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Anchor marker (cyan crosshair) — origin of the reach arc envelope.
+  // Sits inside the 16×16 anchor cell so it doesn't bleed into neighbouring tiles.
+  function drawAnchor(anchor, size = 16) {
+    if (!anchor) return;
+    const cx = anchor.x + size / 2;
+    const cy = anchor.y + size / 2;
+    ctx.save();
+    ctx.strokeStyle = '#5fc4ff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(anchor.x, cy);
+    ctx.lineTo(anchor.x + size, cy);
+    ctx.moveTo(cx, anchor.y);
+    ctx.lineTo(cx, anchor.y + size);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Spawn marker (green dot) — distinct from player so user sees where
+  // the player will respawn. Only useful in editor mode.
+  function drawSpawn(spawn) {
+    if (!spawn) return;
+    ctx.save();
+    ctx.fillStyle = '#5fff8a';
+    ctx.beginPath();
+    ctx.arc(spawn.x + 16, spawn.y + 12, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#5fff8a';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SPAWN', spawn.x + 16, spawn.y - 4);
+    ctx.restore();
+  }
+
+  // Editor toast — top-center text overlay (e.g., "Saved. Tell Claude.")
+  function drawToast(text) {
+    if (!text) return;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    const w = text.length * 8 + 24;
+    ctx.fillRect(SCREEN_W / 2 - w / 2, 60, w, 28);
+    ctx.fillStyle = '#5fc4ff';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, SCREEN_W / 2, 74);
+    ctx.restore();
+  }
+
+  // Draw the reach envelope from a feet-center takeoff position.
+  // The polygon is bounded by the feet trajectory itself — no inflation —
+  // so all edges align with where the FEET can be. The character body's
+  // ±16/24 extent is left to the designer's mental adjustment.
+  // arcs: { outer, inner } from editor.computeReachArcs (feet trajectory).
+  function drawReachArcs(arcs) {
+    if (!arcs?.outer?.length) return;
+    const outer = arcs.outer;
+    const startX = outer[0].x;
+    const farY = outer[outer.length - 1].y;
+    let peakIdx = 0;
+    for (let i = 1; i < outer.length; i++) {
+      if (outer[i].y < outer[peakIdx].y) peakIdx = i;
+    }
+    const peak = outer[peakIdx];
+
+    ctx.save();
+
+    // Fill region
+    ctx.fillStyle = 'rgba(95, 196, 255, 0.18)';
+    ctx.beginPath();
+    ctx.moveTo(startX, peak.y);
+    ctx.lineTo(peak.x, peak.y);
+    for (let i = peakIdx; i < outer.length; i++) {
+      ctx.lineTo(outer[i].x, outer[i].y);
+    }
+    ctx.lineTo(startX, farY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Outer feet trajectory (dashed)
+    ctx.strokeStyle = '#5fc4ff';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(outer[0].x, outer[0].y);
+    for (const p of outer) ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  return {
+    clear, drawSolids, drawGoal, drawPlayer, drawHud,
+    drawReachArcs, drawGrid, drawCursor, drawAnchor, drawSpawn, drawToast,
+  };
 }

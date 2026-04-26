@@ -6,6 +6,20 @@
 
 ## 버전
 
+**v0.15** — 키보드 브러시 에디터 + reach 시각화 + 에이전트 매개 저장
+- `src/editor.js` 신규 — 에디터 상태(`mode: anchor | tile`, cursor, anchor, facing)와 순수 함수(moveCursor, toggleMode, toggleTile, setSpawn, setGoal, createBlankStage, computeReachArcs, serializeStage, snapToGrid)
+- `E` 키로 Play ↔ Edit 토글. 에디터에서 `T`로 anchor↔tile 모드 전환
+- **anchor 모드**: 화살표로 cursor·anchor 함께 이동(16px). reach arc가 anchor 따라 실시간 갱신
+- **tile 모드**: cursor만 이동, anchor 고정. SPACE로 16x16 타일 토글(없으면 추가, 있으면 제거 — eraser는 임의 크기 solid 덮어 제거)
+- **reach arc**: 발 중앙 takeoff 가정. facing 방향 outer 포물선 점선 + 사이 영역 반투명 fill. 솔리드와 만나면 그 지점에서 trajectory 종료
+- 단축키: `P`(spawn), `G`(goal 40x40), `N`(빈 스테이지로 초기화), `0~5`(스테이지 점프), `Tab`(편집 ↔ 시뮬), `S`(저장)
+- **Tab 시뮬 모드**: 에디터 안에서 scratchStage로 실제 게임 플레이. R로 재시도, Tab 다시로 편집 복귀
+- **Goal 중력**: play·sim 모드에서 goal 박스가 중력 받아 가장 가까운 surface에 안착 (디자이너가 정확한 plat 정렬 불필요)
+- **저장 흐름**: `node server.js`(정적 + `POST /save` 엔드포인트) → S 키가 `saved-stages/stage-{ts}.json`에 fetch → `parkour-stage-save` 스킬이 읽어 level.js에 통합
+- **arena 그리드 정렬**: floor h=32 (y=608), walls/ceiling h=16. 모든 외곽이 16-그리드. 인테리어 플랫폼도 일괄 16 정렬
+- **Stage 4 추가** (custom: Long Gap variant). 기존 4·5는 5·6으로 시프트. 총 7개 스테이지(Tutorial / Stairs / Drop / Long Gap / Long Gap custom / Climb / Zigzag Drop)
+- 테스트 34 → 75 (신규 `test/editor.test.js` 41개)
+
 **v0.14** — validator·패턴 라이브러리 제거 (Phase 0 정리)
 - `src/validator.js`·`src/patterns.js` 삭제. 자동 클리어 가능성 검증 폐기
 - `test/validator.test.js`·`test/patterns.test.js` 삭제
@@ -140,7 +154,13 @@
 - 정지 점프로는 거리 부족 — 좌측 floor에서 가속한 뒤 우측 끝에서 정확히 점프해야 우측 floor 착지
 - pit으로 떨어지면 OOB → 리스폰
 
-### Stage 4 — Climb (벽 점프 필수)
+### Stage 4 — Long Gap (custom)
+
+- Stage 3의 변형. 우측 floor가 16x16 타일 27개로 재구성되어 24px 위로 올라감 (y=576·592 두 행)
+- 에디터에서 직접 만든 스테이지의 첫 사례 (`saved-stages/`에서 import)
+- 그 외엔 Stage 3와 동일한 long gap 메커닉
+
+### Stage 5 — Climb (벽 점프 필수)
 
 - 화면 하단 왼쪽에서 스폰, 화면 상단 오른쪽의 골 지점 도달 시 클리어
 - 지그재그 플랫폼 6개 배치 (아래 → 위)
@@ -151,10 +171,10 @@
 
 **함정**: P5는 올라갈 수 있지만 Goal에 도달 불가
 
-### Stage 5 — Zigzag Drop (좌·우 교차 하강)
+### Stage 6 — Zigzag Drop (좌·우 교차 하강)
 
 - 화면 상단 좌측에서 스폰, 좌·우 교차하며 4번 점프해 하단으로 내려감
-- `dropStep` 4번 호출(우→좌→우→좌). **비대칭 dx**(우=210, 좌=100)로 매 단계 ~10px 우측 drift → 같은 column에 다음 same-side 플랫폼이 오지 않게 함. 직접 낙하로 스킵 불가
+- 비대칭 dx(우=210, 좌=100)로 매 단계 ~10px 우측 drift → 같은 column에 다음 same-side 플랫폼이 오지 않게 함. 직접 낙하로 스킵 불가
 - 바닥 floor 없음 — 잘못 떨어지면 OOB → 리스폰
 - Goal: P4 위 (좌측 하단)
 
@@ -162,10 +182,77 @@
 
 ## UI
 
-- **상단 좌**: 스테이지 이름
+- **상단 좌**: 스테이지 이름 (에디터에선 `EDIT [anchor|tile]` 또는 `TEST` 접두사)
 - **상단 우**: 경과 시간 (초, 소수점 2자리)
-- **하단 중앙**: 조작 힌트
-- **클리어 오버레이**: "CLEAR!" + 기록 시간 + 다음 행동 안내 (반투명 오버레이)
+- **하단 중앙**: 모드별 조작 힌트
+- **클리어 오버레이**: "CLEAR!" + 기록 시간 + 다음 행동 안내 (반투명)
+- **토스트**: 저장·모드 전환 등 일시 알림 (상단)
+
+---
+
+## 에디터 (`src/editor.js`)
+
+`E` 키로 Play ↔ Edit 토글. 에디터 모드는 두 서브모드를 가진다.
+
+### 모드
+
+| 모드 | 동작 |
+|---|---|
+| `anchor` (기본) | 화살표가 cursor와 anchor를 함께 이동(16px). reach arc가 anchor 따라 실시간 갱신 |
+| `tile` | cursor만 이동, anchor 고정. 타일 배치에 집중 |
+
+`T` 키로 토글. anchor 모드 진입 시 anchor가 현재 cursor로 점프.
+
+### Edit 모드 단축키
+
+| 키 | 동작 |
+|---|---|
+| ←→↑↓ | 커서 이동 (16px). anchor 모드는 anchor도 함께. 좌·우 입력은 facing 갱신 |
+| T | anchor ↔ tile 모드 토글 |
+| SPACE | 16x16 타일 토글 (커서가 덮는 임의 크기 solid는 통째로 제거) |
+| P | 커서 위치를 spawn으로 설정 |
+| G | 커서 위치에 40x40 goal 설정 |
+| N | 빈 스테이지로 초기화 (arena 외곽만, spawn은 좌하단) |
+| 0~5 | 해당 ID 스테이지를 scratch로 로드 |
+| Tab | **시뮬 모드** 진입/종료 — 편집 중인 스테이지를 즉석 플레이 |
+| S | 현재 스테이지를 `POST /save`로 전송 → `saved-stages/stage-{ts}.json` |
+| E | Play 모드로 복귀 (편집 폐기) |
+
+### 시뮬 모드 (Tab)
+
+편집 중인 scratchStage에서 캐릭터를 spawn시켜 실제 게임처럼 플레이. 점프·벽점프·OOB·goal 모두 동작. R로 캐릭터만 리스폰. Tab 다시 누르면 편집 복귀 (cursor·anchor 그대로).
+
+### Reach 시각화
+
+`computeReachArcs(takeoff, facing, cfg, solids)` — takeoff 지점에서 발 중앙 trajectory를 facing 방향 max 속도로 시뮬레이션. solid와 만나면 그 지점에서 종료. 두 호 사이 영역(outer 곡선 + 위쪽 cap + 좌측 수직선)을 반투명 fill로 그려 도달 가능 영역 표시.
+
+### Goal 중력
+
+play·sim 모드에서 goal 박스가 매 프레임 중력 + 충돌 적용 받아 가장 가까운 surface에 안착. 디자이너는 goal을 공중에 두기만 해도 자동으로 플랫폼 위에 놓임.
+
+---
+
+## 저장 / Import 흐름 (에이전트 매개)
+
+1. `node server.js` (정적 파일 + `POST /save` 엔드포인트)
+2. 에디터에서 S → `fetch('/save', ...)` → `saved-stages/stage-{ts}.json`
+3. 사용자가 Claude에 "스테이지 저장" / `/parkour-stage-save`
+4. `~/.claude/skills/parkour-stage-save` 스킬:
+   - 최신 saved 파일 읽기
+   - id 충돌 시 사용자에 confirm (replace / append)
+   - `src/level.js`에 stage 추가 + STAGES 배열 갱신
+   - `node --test test/*.test.js` 실행해 회귀 확인
+
+`saved-stages/`는 gitignore.
+
+---
+
+## 그리드 정렬
+
+- 모든 인테리어 플랫폼·arena 외곽은 **16px 그리드**에 정렬
+- arena floor: y=608, h=32 / walls: w=16 / ceiling: h=16
+- spawn·goal 위치는 16-그리드일 필요 없음 (player 24px 등 비배수 크기 때문)
+- 에디터 진입 시 cursor를 spawn에서 16-그리드로 스냅해 깔끔한 시작점 보장
 
 ---
 
@@ -176,7 +263,8 @@
 | `test/physics.test.js` | 12 | ✅ 전부 통과 |
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 13 | ✅ 전부 통과 |
-| **합계** | **34** | **✅** |
+| `test/editor.test.js` | 41 | ✅ 전부 통과 |
+| **합계** | **75** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 
@@ -188,9 +276,13 @@
 - 더블 점프
 - 대시 (공중 수평 이동)
 - 콤보/트릭 점수 시스템
-- **스테이지 에디터** — 키보드 화살표로 커서 이동(16px 그리드), SPACE로 플랫폼 칠하기, P/G로 spawn/goal 설정, S로 JSON clipboard 저장. reach arc(커서 위치에서 facing 방향으로 두 포물선 + 반투명 fill)로 도달 가능 영역 시각화. 저장된 JSON은 `parkour-stage-save` 스킬이 import. 세부 plan: `~/.claude/plans/purring-enchanting-noodle.md`
+
+### 에디터 보강
+- **인접 타일 병합** — 16x16 타일 여러 개로 칠한 큰 면을 더 큰 박스 하나로 합치기 (저장 시 압축)
+- **stage name 편집** — 현재 placeholder 'Custom Stage N' 그대로. 인게임 텍스트 입력 또는 import 시 사용자 명시
+- **타일 클립보드** — 일정 영역을 복사·붙여넣기
 
 ### QoL (Quality of Life)
 - **베스트 타임 저장** — `localStorage`로 스테이지별 최단 시간 기록·표시
-- **스테이지 셀렉트 메뉴** — 클리어 후 다른 스테이지로 돌아갈 수단. 현재는 R(재시작)만 가능. 마지막 스테이지 클리어 후 진입 메뉴 부재
+- **스테이지 셀렉트 메뉴** — 클리어 후 다른 스테이지로 돌아갈 수단. 현재는 R(재시작)·0~5 단축키만
 - **Coyote time / Jump buffer** — 플랫폼 끝에서 살짝 늦게 점프하거나, 착지 직전 점프 키를 살짝 일찍 눌러도 받아주는 grace frame. 플랫포머 표준 QoL
