@@ -24,13 +24,20 @@ export const WALL_W = 16;
 export const CEILING_H = 16;
 export const FLOOR_TOP = SCREEN_H - FLOOR_H; // 608
 
-const arena = (...extras) => [
-  wall(0, FLOOR_TOP, SCREEN_W, FLOOR_H),
+const sideWalls = () => [
   wall(0, 0, WALL_W, SCREEN_H),
   wall(SCREEN_W - WALL_W, 0, WALL_W, SCREEN_H),
   wall(0, 0, SCREEN_W, CEILING_H),
+];
+
+const arena = (...extras) => [
+  wall(0, FLOOR_TOP, SCREEN_W, FLOOR_H),
+  ...sideWalls(),
   ...extras,
 ];
+
+// Same arena outline minus the floor — for stages where falling = OOB.
+const arenaNoFloor = (...extras) => [...sideWalls(), ...extras];
 
 
 // === Stage 0: Tutorial ===
@@ -62,15 +69,12 @@ const stage2 = {
   id: 2,
   name: 'Stage 2 — Drop',
   spawn: { x: 64, y: 160 - PLAYER_H },
-  solids: [
-    wall(0, 0, WALL_W, SCREEN_H),
-    wall(SCREEN_W - WALL_W, 0, WALL_W, SCREEN_H),
-    wall(0, 0, SCREEN_W, CEILING_H),
+  solids: arenaNoFloor(
     wall( 48, 160, 100, 16), // TOP
     wall(304, 288, 100, 16), // P1
     wall(544, 400, 100, 16), // P2
     wall(800, 528, 100, 16), // P3
-  ],
+  ),
   goal: { x: 896, y: 480, w: 40, h: 40 },
 };
 
@@ -98,11 +102,8 @@ const stage4_new = {
   id: 4,
   name: 'Stage 4 — Long Gap (custom)',
   spawn: { x: 64, y: 576 },
-  solids: [
-    wall(0,   FLOOR_TOP, 400, FLOOR_H),
-    wall(0, 0, WALL_W, SCREEN_H),
-    wall(SCREEN_W - WALL_W, 0, WALL_W, SCREEN_H),
-    wall(0, 0, SCREEN_W, CEILING_H),
+  solids: arenaNoFloor(
+    wall(0, FLOOR_TOP, 400, FLOOR_H), // partial left floor
     wall(592, 592, 16, 16), wall(592, 576, 16, 16),
     wall(608, 576, 16, 16), wall(608, 592, 16, 16),
     wall(624, 592, 16, 16), wall(624, 576, 16, 16),
@@ -116,7 +117,7 @@ const stage4_new = {
     wall(752, 592, 16, 16), wall(752, 576, 16, 16),
     wall(768, 576, 16, 16), wall(768, 592, 16, 16),
     wall(784, 592, 16, 16), wall(784, 576, 16, 16),
-  ],
+  ),
   goal: { x: 736, y: 544, w: 40, h: 40 },
 };
 
@@ -143,16 +144,13 @@ const stage6_zigzag = {
   id: 6,
   name: 'Stage 6 — Zigzag Drop',
   spawn: { x: 64, y: 160 - PLAYER_H },
-  solids: [
-    wall(0, 0, WALL_W, SCREEN_H),
-    wall(SCREEN_W - WALL_W, 0, WALL_W, SCREEN_H),
-    wall(0, 0, SCREEN_W, CEILING_H),
+  solids: arenaNoFloor(
     wall( 48, 160, 100, 16), // TOP
     wall(352, 256, 100, 16), // P1
     wall(160, 368, 100, 16), // P2
     wall(464, 464, 100, 16), // P3
     wall(272, 560, 100, 16), // P4
-  ],
+  ),
   goal: { x: 288, y: 528, w: 40, h: 40 },
 };
 
