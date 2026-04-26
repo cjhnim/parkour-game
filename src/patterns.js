@@ -10,23 +10,28 @@ import { SCREEN_H } from './level.js';
 
 const w = (x, y, ww, hh) => ({ x, y, w: ww, h: hh });
 
-// Drop stairs (Stage 2 source). Top platform + 3 descending platforms to the right.
-export function dropStairs(ox = 0, oy = 0) {
-  const top = w(ox + 50,  oy + 160, 100, 16);
-  const p1  = w(ox + 300, oy + 280, 100, 16);
-  const p2  = w(ox + 550, oy + 400, 100, 16);
-  const p3  = w(ox + 800, oy + 520, 100, 16);
+// Drop step (atomic). One descending jump from takeoff to a target platform.
+// (ox, oy) = takeoff point: leading edge x and feet y on the source platform.
+// dir = +1 (drop to the right) or -1 (drop to the left).
+// Geometry hard-coded from Stage 2's validated values: 150px forward to target's
+// near edge, 120px vertical drop, 100×16 target. Compose multiple calls to build
+// staircases of any length and direction.
+export function dropStep(ox = 0, oy = 0, dir = 1) {
+  const targetW = 100, targetH = 16;
+  const dxToNearEdge = 150;
+  const dy = 120;
+  const target = dir >= 0
+    ? w(ox + dxToNearEdge, oy + dy, targetW, targetH)
+    : w(ox - dxToNearEdge - targetW, oy + dy, targetW, targetH);
   return {
-    platforms: [top, p1, p2, p3],
+    platforms: [target],
     route: [
-      { label: 'Top → P1', type: 'jump',
-        takeoff: { x: ox + 150, y: oy + 160, vxDir: 1 }, targetPlatform: p1 },
-      { label: 'P1 → P2', type: 'jump',
-        takeoff: { x: ox + 400, y: oy + 280, vxDir: 1 }, targetPlatform: p2 },
-      { label: 'P2 → P3', type: 'jump',
-        takeoff: { x: ox + 650, y: oy + 400, vxDir: 1 }, targetPlatform: p3 },
+      { label: `drop step ${dir > 0 ? '→' : '←'}`, type: 'jump',
+        takeoff: { x: ox, y: oy, vxDir: dir >= 0 ? 1 : -1 }, targetPlatform: target },
     ],
-    bbox: { x: ox + 50, y: oy + 160, w: 850, h: 376 },
+    bbox: dir >= 0
+      ? { x: ox,        y: oy, w: dxToNearEdge + targetW, h: dy + targetH }
+      : { x: target.x,  y: oy, w: dxToNearEdge + targetW, h: dy + targetH },
   };
 }
 
@@ -74,4 +79,4 @@ export function wallClimb(ox = 0, oy = 0) {
   };
 }
 
-export const PATTERN_REGISTRY = { dropStairs, longGap, wallClimb };
+export const PATTERN_REGISTRY = { dropStep, longGap, wallClimb };

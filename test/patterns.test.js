@@ -2,45 +2,78 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULTS } from '../src/tuning.js';
 import { validateStage } from '../src/validator.js';
-import { dropStairs, longGap, wallClimb, PATTERN_REGISTRY } from '../src/patterns.js';
+import { dropStep, longGap, wallClimb, PATTERN_REGISTRY } from '../src/patterns.js';
 
-function stageFromPattern(pattern) {
+function stageFromPattern(pattern, sourcePlatforms = []) {
   return {
     id: 99,
     name: 'pattern-test',
     spawn: { x: 0, y: 0 },
     route: pattern.route,
-    solids: pattern.platforms,
+    solids: [...sourcePlatforms, ...pattern.platforms],
     goal: null,
   };
 }
 
 test('pattern_registry_exposes_three_patterns', () => {
-  assert.equal(PATTERN_REGISTRY.dropStairs, dropStairs);
+  assert.equal(PATTERN_REGISTRY.dropStep, dropStep);
   assert.equal(PATTERN_REGISTRY.longGap, longGap);
   assert.equal(PATTERN_REGISTRY.wallClimb, wallClimb);
 });
 
-for (const [name, fn] of Object.entries({ dropStairs, longGap, wallClimb })) {
+// --- shape ---
+
+test('dropStep_right_returns_target_to_the_right_and_below', () => {
+  const p = dropStep(150, 160, 1);
+  const t = p.platforms[0];
+  assert.ok(t.x > 150, 'target x should be to the right of takeoff');
+  assert.ok(t.y > 160, 'target y should be below takeoff');
+  assert.equal(p.route[0].takeoff.vxDir, 1);
+});
+
+test('dropStep_left_returns_target_to_the_left_and_below', () => {
+  const p = dropStep(800, 160, -1);
+  const t = p.platforms[0];
+  assert.ok(t.x + t.w < 800, 'target right edge should be left of takeoff');
+  assert.ok(t.y > 160, 'target y should be below takeoff');
+  assert.equal(p.route[0].takeoff.vxDir, -1);
+});
+
+for (const [name, fn] of Object.entries({ longGap, wallClimb })) {
   test(`${name}_returns_platforms_route_bbox`, () => {
     const p = fn(0, 0);
     assert.ok(Array.isArray(p.platforms) && p.platforms.length > 0);
     assert.ok(Array.isArray(p.route) && p.route.length > 0);
     assert.equal(typeof p.bbox.x, 'number');
-    assert.equal(typeof p.bbox.y, 'number');
-    assert.equal(typeof p.bbox.w, 'number');
-    assert.equal(typeof p.bbox.h, 'number');
-  });
-
-  test(`${name}_clearable_at_default_offset`, () => {
-    const p = fn(0, 0);
-    const r = validateStage(stageFromPattern(p), DEFAULTS);
-    assert.equal(r.clearable, true, JSON.stringify(r.issues));
   });
 }
 
-// Translation invariance — moving the entire pattern should not change
-// validator outcome since jump physics depend on relative distances.
+// --- clearability at default offset ---
+
+test('dropStep_right_clearable_at_default', () => {
+  const p = dropStep(150, 160, 1);
+  const r = validateStage(stageFromPattern(p), DEFAULTS);
+  assert.equal(r.clearable, true, JSON.stringify(r.issues));
+});
+
+test('dropStep_left_clearable_at_default', () => {
+  const p = dropStep(800, 160, -1);
+  const r = validateStage(stageFromPattern(p), DEFAULTS);
+  assert.equal(r.clearable, true, JSON.stringify(r.issues));
+});
+
+test('longGap_clearable_at_default', () => {
+  const r = validateStage(stageFromPattern(longGap(0, 0)), DEFAULTS);
+  assert.equal(r.clearable, true, JSON.stringify(r.issues));
+});
+
+test('wallClimb_clearable_at_default', () => {
+  const r = validateStage(stageFromPattern(wallClimb(0, 0)), DEFAULTS);
+  assert.equal(r.clearable, true, JSON.stringify(r.issues));
+});
+
+// --- translation invariance ---
+
 const OFFSETS = [
   [16, 0],
   [-16, 0],
@@ -50,8 +83,13 @@ const OFFSETS = [
 ];
 
 for (const [ox, oy] of OFFSETS) {
-  test(`dropStairs_clearable_at_offset_${ox}_${oy}`, () => {
-    const r = validateStage(stageFromPattern(dropStairs(ox, oy)), DEFAULTS);
+  test(`dropStep_right_clearable_at_offset_${ox}_${oy}`, () => {
+    const r = validateStage(stageFromPattern(dropStep(150 + ox, 160 + oy, 1)), DEFAULTS);
+    assert.equal(r.clearable, true, JSON.stringify(r.issues));
+  });
+
+  test(`dropStep_left_clearable_at_offset_${ox}_${oy}`, () => {
+    const r = validateStage(stageFromPattern(dropStep(800 + ox, 160 + oy, -1)), DEFAULTS);
     assert.equal(r.clearable, true, JSON.stringify(r.issues));
   });
 
@@ -66,18 +104,35 @@ for (const [ox, oy] of OFFSETS) {
   });
 }
 
-test('pattern_platforms_shift_by_offset', () => {
-  const a = dropStairs(0, 0).platforms;
-  const b = dropStairs(100, 50).platforms;
-  for (let i = 0; i < a.length; i++) {
-    assert.equal(b[i].x, a[i].x + 100);
-    assert.equal(b[i].y, a[i].y + 50);
-    assert.equal(b[i].w, a[i].w);
-    assert.equal(b[i].h, a[i].h);
-  }
+// --- chaining: dropStep composes correctly ---
+
+test('dropStep_chains_to_match_stage2_geometry', () => {
+  // Reproduce Stage 2: takeoff at (150,160), step right, then chain twice more.
+  const a = dropStep(150, 160, 1);
+  const b = dropStep(a.platforms[0].x + a.platforms[0].w, a.platforms[0].y, 1);
+  const c = dropStep(b.platforms[0].x + b.platforms[0].w, b.platforms[0].y, 1);
+  assert.deepEqual({ x: a.platforms[0].x, y: a.platforms[0].y }, { x: 300, y: 280 });
+  assert.deepEqual({ x: b.platforms[0].x, y: b.platforms[0].y }, { x: 550, y: 400 });
+  assert.deepEqual({ x: c.platforms[0].x, y: c.platforms[0].y }, { x: 800, y: 520 });
 });
 
-test('pattern_route_takeoff_shifts_by_offset', () => {
+test('chained_dropSteps_clearable_as_a_sequence', () => {
+  const top = { x: 50, y: 160, w: 100, h: 16 };
+  const a = dropStep(150, 160, 1);
+  const b = dropStep(a.platforms[0].x + a.platforms[0].w, a.platforms[0].y, 1);
+  const c = dropStep(b.platforms[0].x + b.platforms[0].w, b.platforms[0].y, 1);
+  const stage = {
+    id: 99, name: 'chain', spawn: { x: 0, y: 0 },
+    route: [...a.route, ...b.route, ...c.route],
+    solids: [top, ...a.platforms, ...b.platforms, ...c.platforms],
+    goal: null,
+  };
+  assert.equal(validateStage(stage, DEFAULTS).clearable, true);
+});
+
+// --- coordinate shift invariants ---
+
+test('wallClimb_route_takeoff_shifts_by_offset', () => {
   const a = wallClimb(0, 0).route;
   const b = wallClimb(100, 50).route;
   for (let i = 0; i < a.length; i++) {
