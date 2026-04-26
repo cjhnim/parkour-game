@@ -61,10 +61,6 @@
       leftCol.appendChild(panel);
 
       startGame(document.getElementById('game'), {
-        onStageChange(stage) {
-          panel._currentStage = stage;
-          panel._refreshValidation?.();
-        },
         isRouteVisible: () => panel.style.display === 'flex',
       });
     </script>

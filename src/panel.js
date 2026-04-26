@@ -2,7 +2,6 @@
 // Returns a toggle() function to show/hide the panel.
 
 import { config, DEFAULTS, resetToDefaults } from './tuning.js';
-import { validateStage } from './validator.js';
 
 const SLIDERS = [
   { key: 'gravity',      label: 'Gravity',          min: 0.1, max: 2.0, step: 0.05 },
@@ -97,55 +96,9 @@ export function createPanel() {
       panel._sliders[s.key].value = config[s.key];
       valueEls[s.key].textContent = config[s.key];
     }
-    refreshValidation();
   });
   panel.appendChild(resetBtn);
 
-  // Validation section
-  const divider = document.createElement('div');
-  divider.style.cssText = 'border-top: 1px solid #2a2a3a; margin: 4px 0;';
-  panel.appendChild(divider);
-
-  const validationTitle = document.createElement('div');
-  validationTitle.style.cssText = 'font-weight: bold; font-size: 11px; color: #888; letter-spacing: 1px;';
-  validationTitle.textContent = 'CLEARABILITY';
-  panel.appendChild(validationTitle);
-
-  const validationEl = document.createElement('div');
-  validationEl.style.cssText = 'font-size: 11px; line-height: 1.6;';
-  panel.appendChild(validationEl);
-
-  function refreshValidation() {
-    // Validation is per-stage; call this when stage changes or config changes.
-    // We store the current stage on the panel so index.html can update it.
-    const stage = panel._currentStage;
-    if (!stage) { validationEl.textContent = '—'; return; }
-
-    const r = validateStage(stage, config);
-    const cap = r.capabilities;
-
-    if (r.clearable) {
-      validationEl.innerHTML =
-        `<span style="color:#5fc4ff">✔ Clearable</span><br>` +
-        `<span style="color:#888">Jump: ${cap.maxJumpHeight.toFixed(0)}px &nbsp; Reach: ${cap.maxHorizontalReach.toFixed(0)}px</span>`;
-    } else {
-      const issueLines = r.issues.map(i =>
-        `<span style="color:#f5a623">✖ ${i.step.label}<br>&nbsp;&nbsp;` +
-        `${i.type === 'too_high' ? 'Height' : 'Reach'}: need ${i.required}px, have ${i.available.toFixed(0)}px</span>`
-      ).join('<br>');
-      validationEl.innerHTML =
-        `<span style="color:#e74c3c">✖ Not clearable</span><br>` +
-        `<span style="color:#888">Jump: ${cap.maxJumpHeight.toFixed(0)}px &nbsp; Reach: ${cap.maxHorizontalReach.toFixed(0)}px</span><br>` +
-        issueLines;
-    }
-  }
-
-  // Re-validate whenever a slider changes
-  for (const s of SLIDERS) {
-    panel._sliders[s.key].addEventListener('input', refreshValidation);
-  }
-
-  panel._refreshValidation = refreshValidation;
   return panel;
 }
 

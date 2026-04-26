@@ -75,7 +75,8 @@ export function createRenderer(canvas) {
   }
 
   // Simulates one route step's leading-edge trajectory and returns absolute (x, y) points.
-  // Mirrors validator semantics: x = player's leading edge in vxDir, y = feet y.
+  // Mirrors validator semantics exactly: vx = vxDir * moveSpeed (max), so the
+  // dotted line shows the same trajectory the validator uses to judge clearability.
   function simulateStep(step, cfg) {
     const pts = [];
     const t = step.takeoff;
@@ -83,18 +84,7 @@ export function createRenderer(canvas) {
 
     const vxDir = t.vxDir ?? 0;
     let x = t.x, y = t.y;
-    // Pick vx so contact happens near peak y (cleaner visual). Player can pick
-    // any vx in [0, moveSpeed] via input control.
-    let vx;
-    if (step.targetPlatform && vxDir !== 0) {
-      const tp = step.targetPlatform;
-      const dx = vxDir > 0 ? tp.x - t.x : (tp.x + tp.w) - t.x;
-      const peakFrame = Math.max(1, Math.round(-cfg.jumpVelocity / cfg.gravity));
-      const optimal = dx / peakFrame;
-      vx = Math.max(-cfg.moveSpeed, Math.min(cfg.moveSpeed, optimal));
-    } else {
-      vx = vxDir * cfg.moveSpeed;
-    }
+    let vx = vxDir * cfg.moveSpeed;
     let vy = cfg.jumpVelocity;
     pts.push({ x, y });
     for (let f = 0; f < 200; f++) {

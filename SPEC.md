@@ -6,6 +6,15 @@
 
 ## 버전
 
+**v0.12** — 패턴 라이브러리 도입(Phase 1) + 튜닝 패널 슬림화
+- `src/patterns.js` 신규 — `dropZigzag`·`longGap`·`wallClimb` 세 함수 + `PATTERN_REGISTRY`. 각 함수는 `(ox, oy)`로 translation-invariant하게 `{ platforms, route, bbox }` 반환
+- Stage 2·3·4를 패턴 호출로 재작성 (좌표 동일, 회귀 없음)
+- `test/patterns.test.js` 추가 — 임의 offset에서 validator 통과 확인 (translation invariance)
+- 그리드 컨벤션: `(ox, oy)`는 16의 배수 권장 (강제 X)
+- 튜닝 패널의 CLEARABILITY 텍스트 섹션 제거 (drawRoute 시각화는 유지). 패턴이 사전 검증되므로 패널의 실시간 텍스트 판독은 사실상 불필요
+- 테스트 53 → 77, 전부 통과
+- 의도: 좌표 연립 문제로 새 스테이지 추가가 막혔던 구조 해소. 검증된 패턴만 호출하면 자동 통과. validator는 디자인 search 도구에서 **테스트 oracle + 경로 시각화**로 역할 축소
+
 **v0.11** — Tuning 패널 슬림화. 게임성에 직접 영향 주는 5개(`gravity`·`jumpVelocity`·`moveSpeed`·`wallJumpVx`·`wallJumpVy`)만 노출. 나머지 4개는 DEFAULTS 고정값으로 유지.
 
 **v0.10** — 코드 정리
@@ -155,7 +164,7 @@
 - `wall-touch` — 임의 벽까지 수평 도달 (vertical 무관)
 - `wall-jump-land` — 벽 점프 포물선이 타깃 플랫폼 상단에 착지
 
-**패널 표시**: ⚙ Tuning 패널 하단 CLEARABILITY 섹션에 실시간 표시. 불가 시 문제 step과 type(`too_high`/`too_far`) 정보 표시.
+**용도**: (1) `test/patterns.test.js`에서 패턴이 임의 offset에서 클리어 가능한지 검증, (2) `render.js > drawRoute`에서 점프 trajectory 시각화. 튜닝 패널의 실시간 텍스트 판독은 v0.12에서 제거 (패턴 사전 검증으로 불필요해짐).
 
 **경로 시각화 (`src/render.js > drawRoute`)**: 패널이 열려 있을 때 각 step의 시뮬레이션 trajectory를 점선으로 그리고, 종료 지점에 player bbox(32×24)를 박스로 표시한다.
 
@@ -169,7 +178,8 @@
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 13 | ✅ 전부 통과 |
 | `test/validator.test.js` | 19 | ✅ 전부 통과 |
-| **합계** | **53** | **✅** |
+| `test/patterns.test.js` | 24 | ✅ 전부 통과 |
+| **합계** | **77** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 
@@ -181,7 +191,9 @@
 - 더블 점프
 - 대시 (공중 수평 이동)
 - 콤보/트릭 점수 시스템
-- **스테이지 메이커** — 브라우저 에디터에서 검증된 패턴(long gap·drop·wall climb 등)을 스탬프처럼 배치해 스테이지를 만든다. 패턴 자체가 사전 검증돼있어 좌표 디버깅 불필요. 사용자는 패턴 배치·spawn·goal 위치만 책임. 만든 스테이지는 localStorage에 저장. Stage 5 추가가 validator 좌표 제약 연립 문제로 막힌 경험에서 나온 설계. 세부 plan: `~/.claude/plans/purring-enchanting-noodle.md`
+- **스테이지 메이커** — 브라우저 에디터에서 검증된 패턴(long gap·drop·wall climb 등)을 스탬프처럼 배치해 스테이지를 만든다. 패턴 자체가 사전 검증돼있어 좌표 디버깅 불필요. 사용자는 패턴 배치·spawn·goal 위치만 책임. 만든 스테이지는 localStorage에 저장. Stage 5 추가가 validator 좌표 제약 연립 문제로 막힌 경험에서 나온 설계.
+  - **Phase 1 완료 (v0.12)**: `patterns.js` 추출 + 테스트.
+  - 후속: 신규 패턴 추가, 브라우저 에디터, localStorage 저장.
 
 ### QoL (Quality of Life)
 - **베스트 타임 저장** — `localStorage`로 스테이지별 최단 시간 기록·표시
