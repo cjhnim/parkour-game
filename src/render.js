@@ -74,5 +74,36 @@ export function createRenderer(canvas) {
     }
   }
 
-  return { clear, drawSolids, drawGoal, drawPlayer, drawHud };
+  // Draw reach arcs (outer + inner) and a translucent fill of the area
+  // between them — the set of points reachable from a takeoff position.
+  // arcs: { outer: [{x,y}], inner: [{x,y}] } from editor.computeReachArcs.
+  function drawReachArcs(arcs) {
+    if (!arcs?.outer?.length || !arcs?.inner?.length) return;
+    ctx.save();
+
+    // Filled region: outer forward + inner reversed → closed polygon.
+    ctx.fillStyle = 'rgba(95, 196, 255, 0.15)';
+    ctx.beginPath();
+    ctx.moveTo(arcs.outer[0].x, arcs.outer[0].y);
+    for (const p of arcs.outer) ctx.lineTo(p.x, p.y);
+    for (let i = arcs.inner.length - 1; i >= 0; i--) {
+      ctx.lineTo(arcs.inner[i].x, arcs.inner[i].y);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Boundary curves
+    ctx.strokeStyle = '#5fc4ff';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    for (const arc of [arcs.outer, arcs.inner]) {
+      ctx.beginPath();
+      ctx.moveTo(arc[0].x, arc[0].y);
+      for (const p of arc) ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  return { clear, drawSolids, drawGoal, drawPlayer, drawHud, drawReachArcs };
 }
