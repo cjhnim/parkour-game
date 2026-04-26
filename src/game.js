@@ -18,7 +18,7 @@ import {
 import { createInput } from './input.js';
 import { createRenderer } from './render.js';
 
-export function startGame(canvas, { isRouteVisible } = {}) {
+export function startGame(canvas) {
   const input = createInput();
   const renderer = createRenderer(canvas);
 
@@ -104,10 +104,6 @@ export function startGame(canvas, { isRouteVisible } = {}) {
     renderer.clear();
     renderer.drawSolids(stage.solids);
     renderer.drawGoal(stage.goal);
-    if (isRouteVisible?.()) {
-      renderer.drawRoute(stage, config);
-      renderer.drawPlatformNumbers(stage);
-    }
     renderer.drawPlayer(player, vel.vx);
     renderer.drawHud({
       stageName: stage.name,

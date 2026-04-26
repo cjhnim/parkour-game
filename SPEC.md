@@ -6,6 +6,15 @@
 
 ## 버전
 
+**v0.14** — validator·패턴 라이브러리 제거 (Phase 0 정리)
+- `src/validator.js`·`src/patterns.js` 삭제. 자동 클리어 가능성 검증 폐기
+- `test/validator.test.js`·`test/patterns.test.js` 삭제
+- `render.js`의 `drawRoute`·`drawPlatformNumbers`·`simulateStep` 제거. route 시각화 폐기
+- 모든 스테이지에서 `route` 필드 제거. 스테이지 형태 = `{ id, name, spawn, solids, goal }`
+- Stage 2~5의 패턴 함수 호출을 풀어 literal 좌표로 재작성 (좌표 동일, 시각적·기능적 회귀 없음)
+- 테스트 92 → 34개
+- 의도: validator는 점프 step만 검증 가능, 게임플레이 결함(바닥 우회·column 스킵)은 못 잡음. 패턴 API는 사람한테 인지부하 큼. 자동 검증 대신 reach 시각화 + 키보드 브러시 에디터로 사람 디자인 지원 방향 전환 (후속 plan)
+
 **v0.13** — Stage 5 추가 + 디버그 시각화 보강
 - Stage 5 (Zigzag Drop) 추가 — 진짜 좌·우 교차 zigzag. `dropStep` 4번 호출, **비대칭 dx**(우=210, 좌=100)로 매 단계 ~10px 우측 drift → column 정렬 방지(직접 낙하로 다음 same-side 플랫폼 스킵 막음). 바닥 없음 → 잘못 떨어지면 OOB 리스폰
 - `render.js > drawPlatformNumbers` — 튜닝 패널 켜졌을 때 route 순서대로 각 플랫폼 위에 번호(0=시작, 1=첫 점프 타깃, ...) 동그라미 표시. trajectory와 함께 디자인 검토용
@@ -160,31 +169,6 @@
 
 ---
 
-## 클리어 가능성 검증 (`src/validator.js`)
-
-튜닝 패널에서 물리 파라미터를 바꿀 때 스테이지를 클리어할 수 있는지 실시간으로 판독한다.
-
-- `computeMaxJumpHeight(cfg)` — 현재 config로 도달 가능한 최대 점프 높이
-- `computeMaxHorizontalReach(cfg)` — 점프 중 최대 수평 이동 거리
-- `validateStage(stage, cfg)` — route 각 step을 시뮬레이션 → `{ clearable, issues[], capabilities }`
-
-**스테이지 route**: 각 step에 `takeoff: {x, y, vxDir}` (출발 지점 및 방향) + `targetPlatform: {x, y, w, h}` 명시.
-
-**검증 모델 (bbox-overlap)**: 출발점에서 풀스피드로 점프했을 때의 포물선 중 어떤 프레임에서든 플레이어 bbox와 타깃 플랫폼 bbox가 겹치면 통과로 판정한다. 상단 착지뿐 아니라 측면 충돌(벽 클링)도 포함된다 — 측면에 닿으면 벽 점프 + 입력 제어로 상단 착지가 가능하기 때문.
-
-**Step types**:
-- `jump` — 타깃 플랫폼에 bbox 충돌 (대부분의 step)
-- `wall-touch` — 임의 벽까지 수평 도달 (vertical 무관)
-- `wall-jump-land` — 벽 점프 포물선이 타깃 플랫폼 상단에 착지
-
-**용도**: (1) `test/patterns.test.js`에서 패턴이 임의 offset에서 클리어 가능한지 검증, (2) `render.js > drawRoute`에서 점프 trajectory 시각화. 튜닝 패널의 실시간 텍스트 판독은 v0.12에서 제거 (패턴 사전 검증으로 불필요해짐).
-
-**경로 시각화 (`src/render.js > drawRoute`)**: 패널이 열려 있을 때 각 step의 시뮬레이션 trajectory를 점선으로 그리고, 종료 지점에 player bbox(32×24)를 박스로 표시한다. validator와 동일한 vx(=`vxDir × moveSpeed`)로 시뮬레이션해 실제 클리어 가능 trajectory와 일치.
-
-**플랫폼 번호 (`src/render.js > drawPlatformNumbers`)**: 패널이 열려 있을 때 각 플랫폼 위에 route 순서 번호(0=시작 플랫폼, 1=첫 점프 타깃, ...)를 동그라미로 표시. 디자인 검토 시 흐름 파악용.
-
----
-
 ## 테스트 현황
 
 | 파일 | 테스트 수 | 상태 |
@@ -192,9 +176,7 @@
 | `test/physics.test.js` | 12 | ✅ 전부 통과 |
 | `test/collision.test.js` | 9 | ✅ 전부 통과 |
 | `test/level.test.js` | 13 | ✅ 전부 통과 |
-| `test/validator.test.js` | 20 | ✅ 전부 통과 |
-| `test/patterns.test.js` | 38 | ✅ 전부 통과 |
-| **합계** | **92** | **✅** |
+| **합계** | **34** | **✅** |
 
 테스트 대상: 순수 함수만. DOM·Canvas·RAF·키보드 입력은 수동 검증.
 
@@ -206,9 +188,7 @@
 - 더블 점프
 - 대시 (공중 수평 이동)
 - 콤보/트릭 점수 시스템
-- **스테이지 메이커** — 브라우저 에디터에서 검증된 패턴(long gap·drop·wall climb 등)을 스탬프처럼 배치해 스테이지를 만든다. 패턴 자체가 사전 검증돼있어 좌표 디버깅 불필요. 사용자는 패턴 배치·spawn·goal 위치만 책임. 만든 스테이지는 localStorage에 저장. Stage 5 추가가 validator 좌표 제약 연립 문제로 막힌 경험에서 나온 설계.
-  - **Phase 1 완료 (v0.12)**: `patterns.js` 추출 + 테스트.
-  - 후속: 신규 패턴 추가, 브라우저 에디터, localStorage 저장.
+- **스테이지 에디터** — 키보드 화살표로 커서 이동(16px 그리드), SPACE로 플랫폼 칠하기, P/G로 spawn/goal 설정, S로 JSON clipboard 저장. reach arc(커서 위치에서 facing 방향으로 두 포물선 + 반투명 fill)로 도달 가능 영역 시각화. 저장된 JSON은 `parkour-stage-save` 스킬이 import. 세부 plan: `~/.claude/plans/purring-enchanting-noodle.md`
 
 ### QoL (Quality of Life)
 - **베스트 타임 저장** — `localStorage`로 스테이지별 최단 시간 기록·표시
