@@ -2,7 +2,7 @@
 // A stage is { id, name, spawn:{x,y}, solids:[box], goal:box }.
 
 import { intersects } from './collision.js';
-import { dropZigzag, longGap, wallClimb } from './patterns.js';
+import { dropStairs, longGap, wallClimb } from './patterns.js';
 
 export const SCREEN_W = 960;
 export const SCREEN_H = 640;
@@ -57,7 +57,7 @@ const stage1 = {
 // No bottom floor — falling off any platform = OOB respawn. Goal sits between
 // the last drop platform's right edge and the right wall — only reachable by
 // walking on it (mid-air trajectories from upper platforms pass below).
-const s2 = dropZigzag(0, 0);
+const s2 = dropStairs(0, 0);
 const stage2 = {
   id: 2,
   name: 'Stage 2 — Drop',

@@ -7,7 +7,7 @@
 ## 버전
 
 **v0.12** — 패턴 라이브러리 도입(Phase 1) + 튜닝 패널 슬림화
-- `src/patterns.js` 신규 — `dropZigzag`·`longGap`·`wallClimb` 세 함수 + `PATTERN_REGISTRY`. 각 함수는 `(ox, oy)`로 translation-invariant하게 `{ platforms, route, bbox }` 반환
+- `src/patterns.js` 신규 — `dropStairs`·`longGap`·`wallClimb` 세 함수 + `PATTERN_REGISTRY`. 각 함수는 `(ox, oy)`로 translation-invariant하게 `{ platforms, route, bbox }` 반환
 - Stage 2·3·4를 패턴 호출로 재작성 (좌표 동일, 회귀 없음)
 - `test/patterns.test.js` 추가 — 임의 offset에서 validator 통과 확인 (translation invariance)
 - 그리드 컨벤션: `(ox, oy)`는 16의 배수 권장 (강제 X)
@@ -115,7 +115,7 @@
 
 ### Stage 2 — Drop (하강)
 
-- 천장 부근(y=160)에서 스폰, 4개 플랫폼을 아래로 zigzag로 내려감 (Top → P1 → P2 → P3)
+- 천장 부근(y=160)에서 스폰, 4개 플랫폼을 오른쪽으로 한 칸씩 내려가는 계단형 (Top → P1 → P2 → P3)
 - 바닥 floor 없음 — 잘못 떨어지면 OOB → 리스폰 (낙사 로직 검증 겸)
 - Goal: P3 우측면, 오른쪽 벽 직전. P3 위로 걸어가야 도달
 

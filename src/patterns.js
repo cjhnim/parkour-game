@@ -10,8 +10,8 @@ import { SCREEN_H } from './level.js';
 
 const w = (x, y, ww, hh) => ({ x, y, w: ww, h: hh });
 
-// Drop zigzag (Stage 2 source). Top platform + 3 zigzag drops to the right.
-export function dropZigzag(ox = 0, oy = 0) {
+// Drop stairs (Stage 2 source). Top platform + 3 descending platforms to the right.
+export function dropStairs(ox = 0, oy = 0) {
   const top = w(ox + 50,  oy + 160, 100, 16);
   const p1  = w(ox + 300, oy + 280, 100, 16);
   const p2  = w(ox + 550, oy + 400, 100, 16);
@@ -74,4 +74,4 @@ export function wallClimb(ox = 0, oy = 0) {
   };
 }
 
-export const PATTERN_REGISTRY = { dropZigzag, longGap, wallClimb };
+export const PATTERN_REGISTRY = { dropStairs, longGap, wallClimb };

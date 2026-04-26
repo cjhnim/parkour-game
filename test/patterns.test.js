@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULTS } from '../src/tuning.js';
 import { validateStage } from '../src/validator.js';
-import { dropZigzag, longGap, wallClimb, PATTERN_REGISTRY } from '../src/patterns.js';
+import { dropStairs, longGap, wallClimb, PATTERN_REGISTRY } from '../src/patterns.js';
 
 function stageFromPattern(pattern) {
   return {
@@ -16,12 +16,12 @@ function stageFromPattern(pattern) {
 }
 
 test('pattern_registry_exposes_three_patterns', () => {
-  assert.equal(PATTERN_REGISTRY.dropZigzag, dropZigzag);
+  assert.equal(PATTERN_REGISTRY.dropStairs, dropStairs);
   assert.equal(PATTERN_REGISTRY.longGap, longGap);
   assert.equal(PATTERN_REGISTRY.wallClimb, wallClimb);
 });
 
-for (const [name, fn] of Object.entries({ dropZigzag, longGap, wallClimb })) {
+for (const [name, fn] of Object.entries({ dropStairs, longGap, wallClimb })) {
   test(`${name}_returns_platforms_route_bbox`, () => {
     const p = fn(0, 0);
     assert.ok(Array.isArray(p.platforms) && p.platforms.length > 0);
@@ -50,8 +50,8 @@ const OFFSETS = [
 ];
 
 for (const [ox, oy] of OFFSETS) {
-  test(`dropZigzag_clearable_at_offset_${ox}_${oy}`, () => {
-    const r = validateStage(stageFromPattern(dropZigzag(ox, oy)), DEFAULTS);
+  test(`dropStairs_clearable_at_offset_${ox}_${oy}`, () => {
+    const r = validateStage(stageFromPattern(dropStairs(ox, oy)), DEFAULTS);
     assert.equal(r.clearable, true, JSON.stringify(r.issues));
   });
 
@@ -67,8 +67,8 @@ for (const [ox, oy] of OFFSETS) {
 }
 
 test('pattern_platforms_shift_by_offset', () => {
-  const a = dropZigzag(0, 0).platforms;
-  const b = dropZigzag(100, 50).platforms;
+  const a = dropStairs(0, 0).platforms;
+  const b = dropStairs(100, 50).platforms;
   for (let i = 0; i < a.length; i++) {
     assert.equal(b[i].x, a[i].x + 100);
     assert.equal(b[i].y, a[i].y + 50);
